@@ -1,0 +1,201 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "deeplake-vector-service"
+version = "1.0.0"
+description = "Universal Deep Lake vector database service with HTTP and gRPC APIs"
+authors = [
+    {name = "Deep Lake Team", email = "team@deeplake.ai"},
+]
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Database",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
+dependencies = [
+    "fastapi>=0.104.0",
+    "uvicorn[standard]>=0.24.0",
+    "pydantic>=2.5.0",
+    "grpcio>=1.60.0",
+    "grpcio-tools>=1.60.0",
+    "protobuf>=4.25.0",
+    "deeplake>=4.0.0",
+    "numpy>=1.24.0",
+    "redis>=5.0.0",
+    "prometheus-client>=0.19.0",
+    "pyjwt>=2.8.0",
+    "python-multipart>=0.0.6",
+    "httpx>=0.25.0",
+    "tenacity>=8.2.0",
+    "structlog>=23.2.0",
+    "click>=8.1.0",
+    "pydantic-settings>=2.0.0",
+    "passlib[bcrypt]>=1.7.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "black>=23.12.0",
+    "isort>=5.13.0",
+    "flake8>=6.1.0",
+    "mypy>=1.7.0",
+    "pre-commit>=3.6.0",
+]
+test = [
+    "pytest>=7.4.0",
+    "pytest-asyncio>=0.21.0",
+    "pytest-cov>=4.1.0",
+    "pytest-mock>=3.12.0",
+    "httpx>=0.25.0",
+    "grpcio-testing>=1.60.0",
+]
+
+[project.scripts]
+deeplake-service = "app.main:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+include = '\.pyi?$'
+extend-exclude = '''
+/(
+    \.eggs
+  | \.git
+  | \.hg
+  | \.mypy_cache
+  | \.tox
+  | \.venv
+  | _build
+  | buck-out
+  | build
+  | dist
+  | app/models/proto/.*_pb2\.py
+  | app/models/proto/.*_pb2_grpc\.py
+)/
+'''
+
+[tool.isort]
+profile = "black"
+multi_line_output = 3
+include_trailing_comma = true
+force_grid_wrap = 0
+use_parentheses = true
+ensure_newline_before_comments = true
+line_length = 88
+skip_glob = ["app/models/proto/*_pb2.py", "app/models/proto/*_pb2_grpc.py"]
+
+[tool.mypy]
+python_version = "3.9"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+disallow_untyped_decorators = false
+
+no_implicit_optional = true
+
+warn_redundant_casts = true
+warn_unused_ignores = true
+warn_no_return = true
+warn_unreachable = true
+strict_equality = true
+
+exclude = [
+    "app/models/proto/.*_pb2\\.py",
+    "app/models/proto/.*_pb2_grpc\\.py",
+]
+
+# Ignore specific structlog typing issues
+[[tool.mypy.overrides]]
+module = "app.config.logging"
+disable_error_code = "list-item"
+
+# Handle missing imports for third-party packages
+[[tool.mypy.overrides]]
+module = [
+    "fastapi.*",
+    "uvicorn.*",
+    "grpc.*",
+    "grpcio.*",
+    "deeplake.*",
+    "prometheus_client.*",
+    "redis.*",
+    "tenacity.*",
+    "structlog.*",
+    "passlib.*",
+    "httpx.*",
+    "pyjwt.*",
+    "numpy.*"
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=app",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=25",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests", 
+    "unit: marks tests as unit tests",
+    "asyncio: marks tests as asyncio",
+]
+asyncio_mode = "auto"
+
+[tool.coverage.run]
+source = ["app"]
+omit = [
+    "app/models/proto/*_pb2.py",
+    "app/models/proto/*_pb2_grpc.py",
+    "*/tests/*",
+    "*/test_*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if __name__ == .__main__.:",
+    "if TYPE_CHECKING:",
+]
+
+[dependency-groups]
+dev = [
+    "mypy==1.7.1",
+    "pylint>=3.3.7",
+    "pytest-asyncio>=1.0.0",
+    "pytest-cov>=6.2.1",
+    "types-requests>=2.32.4.20250611",
+]

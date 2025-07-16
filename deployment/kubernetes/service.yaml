@@ -1,0 +1,46 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: deeplake-service
+  namespace: deeplake
+  labels:
+    app: deeplake-service
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "8000"
+    prometheus.io/path: "/api/v1/metrics/prometheus"
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8000
+    targetPort: http
+    protocol: TCP
+  - name: grpc
+    port: 50051
+    targetPort: grpc
+    protocol: TCP
+  selector:
+    app: deeplake-service
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: deeplake-service-headless
+  namespace: deeplake
+  labels:
+    app: deeplake-service
+spec:
+  type: ClusterIP
+  clusterIP: None
+  ports:
+  - name: http
+    port: 8000
+    targetPort: http
+    protocol: TCP
+  - name: grpc
+    port: 50051
+    targetPort: grpc
+    protocol: TCP
+  selector:
+    app: deeplake-service

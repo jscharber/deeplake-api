@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: deeplake
+  labels:
+    name: deeplake
+    app.kubernetes.io/name: deeplake-vector-service
+    app.kubernetes.io/version: "1.0.0"
