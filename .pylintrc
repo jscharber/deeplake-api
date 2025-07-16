@@ -1,0 +1,42 @@
+[MASTER]
+init-hook='import sys; sys.path.append(".")'
+
+[MESSAGES CONTROL]
+disable=
+    missing-module-docstring,
+    missing-class-docstring,
+    missing-function-docstring,
+    too-few-public-methods,
+    too-many-arguments,
+    too-many-locals,
+    too-many-branches,
+    too-many-statements,
+    too-many-instance-attributes,
+    line-too-long,
+    fixme,
+    broad-except,
+    import-outside-toplevel,
+    unused-argument,
+    no-member,
+    invalid-name,
+    protected-access,
+    duplicate-code
+
+[FORMAT]
+max-line-length=88
+
+[DESIGN]
+max-args=10
+max-locals=20
+max-returns=6
+max-branches=15
+max-statements=50
+
+[SIMILARITIES]
+min-similarity-lines=10
+ignore-comments=yes
+ignore-docstrings=yes
+ignore-imports=no
+
+[BASIC]
+good-names=i,j,k,ex,Run,_,id,db,app,e,f,x,y,z
