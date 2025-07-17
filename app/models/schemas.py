@@ -255,10 +255,52 @@ class HealthResponse(BaseModel):
     dependencies: Dict[str, str]
 
 
+class ServiceInfo(BaseModel):
+    """Service information metrics."""
+    version: str
+    uptime_seconds: float
+
+class RequestMetrics(BaseModel):
+    """Request metrics."""
+    http_total: float
+    grpc_total: float
+
+class DatasetMetrics(BaseModel):
+    """Dataset metrics."""
+    total: float
+
+class VectorMetrics(BaseModel):
+    """Vector metrics."""
+    total: float
+    inserted_total: float
+
+class SearchMetrics(BaseModel):
+    """Search metrics."""
+    total: float
+
+class ErrorMetrics(BaseModel):
+    """Error metrics."""
+    total: float
+
+class CacheMetrics(BaseModel):
+    """Cache metrics."""
+    hit_ratio: float
+    operations_total: float
+
+class MetricsData(BaseModel):
+    """Structured metrics data."""
+    service_info: ServiceInfo
+    requests: RequestMetrics
+    datasets: DatasetMetrics
+    vectors: VectorMetrics
+    searches: SearchMetrics
+    errors: ErrorMetrics
+    cache: CacheMetrics
+
 class MetricsResponse(BaseModel):
     """Metrics response model."""
     
-    metrics: Dict[str, float]
+    metrics: MetricsData
     timestamp: datetime
 
 

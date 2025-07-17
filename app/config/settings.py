@@ -51,15 +51,16 @@ class GRPCConfig(BaseSettings):
 class AuthConfig(BaseSettings):
     """Authentication configuration."""
     
-    jwt_secret_key: str = Field(
-        default="your-secret-key-change-in-production",
-        description="JWT secret key"
+    jwt_secret_key: Optional[str] = Field(
+        default=None,
+        description="JWT secret key (required, set via JWT_SECRET_KEY env var)"
     )
     jwt_algorithm: str = Field(default="HS256", description="JWT algorithm")
-    jwt_expiration_hours: int = Field(default=24, description="JWT expiration in hours")
+    jwt_expiration_hours: int = Field(default=8760, description="JWT expiration in hours (default: 1 year)")
     
     class Config:
-        env_prefix = "JWT_"
+        # Remove env_prefix to allow direct JWT_SECRET_KEY mapping
+        pass
 
 
 class RedisConfig(BaseSettings):
@@ -126,9 +127,9 @@ class DevelopmentConfig(BaseSettings):
         default=["http://localhost:3000", "http://localhost:8080"],
         description="CORS allowed origins"
     )
-    default_api_key: str = Field(
-        default="dev-12345-abcdef-67890-ghijkl",
-        description="Fixed development API key"
+    default_api_key: Optional[str] = Field(
+        default=None,
+        description="Development API key (set via DEV_DEFAULT_API_KEY env var)"
     )
     
     class Config:
@@ -138,23 +139,24 @@ class DevelopmentConfig(BaseSettings):
 class Settings(BaseSettings):
     """Main application settings."""
     
-    app_name: str = "Deep Lake Vector Service"
+    app_name: str = "Tributary AI services for DeepLake"
     app_version: str = "1.0.0"
     
     # Sub-configurations
-    deeplake: DeepLakeConfig = DeepLakeConfig()
-    http: HTTPConfig = HTTPConfig()
-    grpc: GRPCConfig = GRPCConfig()
-    auth: AuthConfig = AuthConfig()
-    redis: RedisConfig = RedisConfig()
-    monitoring: MonitoringConfig = MonitoringConfig()
-    rate_limit: RateLimitConfig = RateLimitConfig()
-    performance: PerformanceConfig = PerformanceConfig()
-    development: DevelopmentConfig = DevelopmentConfig()
+    deeplake: DeepLakeConfig = Field(default_factory=DeepLakeConfig)
+    http: HTTPConfig = Field(default_factory=HTTPConfig)
+    grpc: GRPCConfig = Field(default_factory=GRPCConfig)
+    auth: AuthConfig = Field(default_factory=AuthConfig)
+    redis: RedisConfig = Field(default_factory=RedisConfig)
+    monitoring: MonitoringConfig = Field(default_factory=MonitoringConfig)
+    rate_limit: RateLimitConfig = Field(default_factory=RateLimitConfig)
+    performance: PerformanceConfig = Field(default_factory=PerformanceConfig)
+    development: DevelopmentConfig = Field(default_factory=DevelopmentConfig)
     
     class Config:
         env_file = ".env"
         env_file_encoding = "utf-8"
+        extra = "ignore"  # Ignore extra fields
 
 
 # Global settings instance

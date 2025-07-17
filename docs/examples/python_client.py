@@ -197,8 +197,13 @@ class DeepLakeClient:
 async def main():
     """Example usage of the Deep Lake client."""
     
-    # Initialize client with default development API key
-    api_key = "dev-12345-abcdef-67890-ghijkl"  # Default development API key
+    # Initialize client with API key from environment variable
+    import os
+    api_key = os.getenv("API_KEY")
+    if not api_key:
+        print("ERROR: API_KEY environment variable is required")
+        print("Usage: API_KEY=your_api_key python docs/examples/python_client.py")
+        return
     
     async with DeepLakeClient(
         base_url="http://localhost:8000",
@@ -371,7 +376,14 @@ class SyncDeepLakeClient:
 
 def sync_example():
     """Synchronous example usage."""
-    client = SyncDeepLakeClient(api_key="dev-12345-abcdef-67890-ghijkl")
+    import os
+    api_key = os.getenv("API_KEY")
+    if not api_key:
+        print("ERROR: API_KEY environment variable is required")
+        print("Usage: API_KEY=your_api_key python docs/examples/python_client.py")
+        return
+    
+    client = SyncDeepLakeClient(api_key=api_key)
     
     # Create dataset
     dataset = client.create_dataset(

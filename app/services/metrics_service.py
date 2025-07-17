@@ -28,12 +28,12 @@ class MetricsService(LoggingMixin):
         # Service info
         self.service_info = Info(
             'deeplake_service_info',
-            'Deep Lake Vector Service information',
+            'Tributary AI services for DeepLake information',
             registry=self.registry
         )
         self.service_info.info({
             'version': '1.0.0',
-            'service': 'Deep Lake Vector Service',
+            'service': 'Tributary AI services for DeepLake',
             'build_date': datetime.now(timezone.utc).isoformat()
         })
         

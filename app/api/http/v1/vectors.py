@@ -2,7 +2,7 @@
 
 # pylint: disable=W0621
 
-from typing import List
+from typing import List, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Path
 
 from app.api.http.dependencies import (
@@ -29,27 +29,15 @@ router = APIRouter(prefix="/datasets/{dataset_id}/vectors", tags=["vectors"])
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def insert_vector(
     vector: VectorCreate,
-    dataset_id: str = Path(..., description="Dataset ID")
+    dataset_id: str = Path(..., description="Dataset ID"),
+    deeplake_service: DeepLakeService = Depends(get_deeplake_service),
+    auth_info: Dict[str, Any] = Depends(authorize_operation("insert_vector"))
 ) -> dict:
-    """Insert a single vector into the dataset - simplified for debugging."""
-
-    # Hardcode tenant_id and create service directly
-    tenant_id = "default"
+    """Insert a single vector into the dataset."""
+    
+    tenant_id = auth_info['tenant_id']
 
     try:
-        from app.services.deeplake_service import DeepLakeService
-        deeplake_service = DeepLakeService()
-
-        # Basic validation - check if dataset exists
-        import os
-        from app.config.settings import settings
-        dataset_path = os.path.join(settings.deeplake.storage_location, tenant_id, dataset_id)
-        if not os.path.exists(dataset_path):
-            return {
-                "success": False,
-                "error": f"Dataset {dataset_id} not found"
-            }
-
         # Insert vector (as a batch of 1)
         result = await deeplake_service.insert_vectors(
             dataset_id=dataset_id,

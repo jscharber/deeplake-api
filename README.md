@@ -1,4 +1,4 @@
-# Deep Lake Vector Service
+# Tributary AI services for DeepLake
 
 A production-ready, universal vector database service built with Deep Lake, providing both HTTP REST and gRPC APIs for vector storage, search, and management.
 
@@ -45,10 +45,20 @@ A production-ready, universal vector database service built with Deep Lake, prov
    curl http://localhost:8000/api/v1/health
    ```
 
-4. **Create your first dataset**
+4. **Generate and configure API key**
+   ```bash
+   # Generate JWT secret
+   export JWT_SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
+   
+   # Generate API key
+   python scripts/generate_api_key_quick.py
+   export API_KEY="your-generated-api-key"
+   ```
+
+5. **Create your first dataset**
    ```bash
    curl -X POST http://localhost:8000/api/v1/datasets/ \
-     -H "Authorization: ApiKey dev-12345-abcdef-67890-ghijkl" \
+     -H "Authorization: ApiKey $API_KEY" \
      -H "Content-Type: application/json" \
      -d '{
        "name": "my-first-dataset",
@@ -158,10 +168,13 @@ See `proto/deeplake_service.proto` for the complete protocol buffer definition.
 
 ### Interactive Documentation
 
-When running in development mode, interactive API documentation is available at:
+Interactive API documentation is always available at:
 
 - **Swagger UI**: http://localhost:8000/docs
 - **ReDoc**: http://localhost:8000/redoc
+- **OpenAPI Schema**: http://localhost:8000/openapi.json
+
+**Note**: In v1.0.1+, documentation endpoints are always accessible regardless of environment mode.
 
 ## ⚙️ Configuration
 
@@ -210,21 +223,36 @@ MONITORING_ENABLE_METRICS=true
 
 The service supports two authentication methods:
 
-### Default Development API Key
+### 🚨 Security Update (v1.0.1)
 
-For development and testing, the service automatically creates a default API key:
-
-**Default API Key**: `dev-12345-abcdef-67890-ghijkl`
-
-This key has full permissions (`read`, `write`, `admin`) for the `default` tenant and is automatically available when the service starts.
+**BREAKING CHANGE**: Hardcoded API keys have been removed for security. You must now generate API keys using the provided tools.
 
 ### API Key Authentication
 
-1. **Generate an API key** (programmatically or via admin interface)
-2. **Include in requests**:
+1. **Generate JWT Secret**:
    ```bash
-   curl -H "Authorization: ApiKey your-api-key" ...
+   export JWT_SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
    ```
+
+2. **Generate an API key**:
+   ```bash
+   python scripts/generate_api_key_quick.py
+   export API_KEY="your-generated-api-key"
+   ```
+
+3. **Include in requests**:
+   ```bash
+   curl -H "Authorization: ApiKey $API_KEY" ...
+   ```
+
+### Environment Setup
+
+For convenient development, add to your `~/.bashrc`:
+```bash
+# See bashrc_exports.sh for complete template
+export JWT_SECRET_KEY="your-jwt-secret-key"
+export API_KEY="your-api-key"
+```
 
 ### JWT Token Authentication
 
@@ -463,12 +491,24 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🗺️ Roadmap
 
-- [ ] Text embedding integration
-- [ ] Advanced indexing options
-- [ ] Horizontal scaling support
-- [ ] GraphQL API
-- [ ] Real-time search updates
-- [ ] Advanced analytics dashboard
+### ✅ Recently Completed (v1.0.1)
+- [x] **Security Hardening**: Removed hardcoded API keys and JWT secrets
+- [x] **Documentation Access**: Always-available API documentation
+- [x] **Service Configuration**: Enhanced environment variable support
+
+### 🚧 In Progress
+- [ ] **Cosine Similarity**: Implementation of cosine distance metric
+- [ ] **Metadata Filtering**: Advanced search filtering capabilities
+
+### 🎯 Upcoming Features
+- [ ] **Text embedding integration**: Direct embedding service integration
+- [ ] **Advanced indexing options**: HNSW and IVF index support
+- [ ] **Horizontal scaling support**: Multi-instance deployment
+- [ ] **Grafana dashboards**: Operational monitoring dashboards
+- [ ] **GraphQL API**: Alternative query interface
+- [ ] **Real-time search updates**: Live search result updates
+
+See [ROADMAP.md](ROADMAP.md) for detailed planning and timelines.
 
 ## 📈 Performance
 
@@ -489,4 +529,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ---
 
-**Made with ❤️ by the Deep Lake Vector Service Team**
+**Made with ❤️ by the Tributary AI services for DeepLake Team**
