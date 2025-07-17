@@ -56,7 +56,7 @@ async def health_check(
     
     return HealthResponse(
         status=overall_status,
-        service="Deep Lake Vector Service",
+        service="Tributary AI services for DeepLake",
         version="1.0.0",
         timestamp=datetime.now(),
         dependencies=dependencies
@@ -161,7 +161,7 @@ async def get_service_stats(
         
         return {
             "service": {
-                "name": "Deep Lake Vector Service",
+                "name": "Tributary AI services for DeepLake",
                 "version": "1.0.0",
                 "uptime_seconds": getattr(metrics_service, '_start_time', 0),
             },

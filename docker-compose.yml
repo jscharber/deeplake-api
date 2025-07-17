@@ -22,8 +22,8 @@ services:
       - GRPC_PORT=50051
       - GRPC_MAX_WORKERS=10
 
-      # Authentication
-      - JWT_SECRET_KEY=${JWT_SECRET_KEY:-your-secret-key-change-in-production}
+      # Authentication (REQUIRED)
+      - JWT_SECRET_KEY=${JWT_SECRET_KEY}
       - JWT_ALGORITHM=HS256
       - JWT_EXPIRATION_HOURS=24
 

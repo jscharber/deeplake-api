@@ -2,7 +2,7 @@
 
 from typing import Optional, Dict, Any, Callable
 from fastapi import Depends, HTTPException, status, Request
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
+from fastapi.security import APIKeyHeader
 
 from app.services.deeplake_service import DeepLakeService
 from app.services.auth_service import AuthService
@@ -18,7 +18,7 @@ _cache_service: Optional[CacheService] = None
 _cache_manager: Optional[CacheManager] = None
 _metrics_service: Optional[MetricsService] = None
 
-security = HTTPBearer(auto_error=False)
+api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 
 
 def init_dependencies(
@@ -78,17 +78,26 @@ def get_metrics_service() -> MetricsService:
 
 async def get_current_auth(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+    api_key: Optional[str] = Depends(api_key_header),
     auth_service: AuthService = Depends(get_auth_service)
 ) -> Dict[str, Any]:
     """Get current authentication information."""
     try:
         # Extract authorization header
         auth_header = None
-        if credentials:
-            auth_header = f"{credentials.scheme} {credentials.credentials}"
+        
+        # Check for API key from OpenAPI ApiKeyAuth
+        if api_key:
+            # If it already has ApiKey prefix, use as is
+            if api_key.startswith("ApiKey "):
+                auth_header = api_key
+            else:
+                # Add ApiKey prefix for raw API key
+                auth_header = f"ApiKey {api_key}"
+        # Check for authorization header directly
         elif "authorization" in request.headers:
             auth_header = request.headers["authorization"]
+        # Check for x-api-key header
         elif "x-api-key" in request.headers:
             auth_header = f"ApiKey {request.headers['x-api-key']}"
         
@@ -96,7 +105,7 @@ async def get_current_auth(
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail="Missing authentication credentials",
-                headers={"WWW-Authenticate": "Bearer"}
+                headers={"WWW-Authenticate": "ApiKey"}
             )
         
         # Authenticate request
@@ -111,7 +120,7 @@ async def get_current_auth(
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(e),
-            headers={"WWW-Authenticate": "Bearer"}
+            headers={"WWW-Authenticate": "ApiKey"}
         )
     except Exception as e:
         raise HTTPException(

@@ -3,9 +3,9 @@ requires = ["setuptools>=45", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "deeplake-vector-service"
+name = "tributary-ai-services-for-deeplake"
 version = "1.0.0"
-description = "Universal Deep Lake vector database service with HTTP and gRPC APIs"
+description = "Universal DeepLake vector database service with HTTP and gRPC APIs"
 authors = [
     {name = "Deep Lake Team", email = "team@deeplake.ai"},
 ]

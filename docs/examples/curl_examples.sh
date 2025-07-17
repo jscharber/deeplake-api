@@ -6,8 +6,15 @@
 set -e
 
 # Configuration
-BASE_URL="http://localhost:8000"
-API_KEY="dev-12345-abcdef-67890-ghijkl"  # Default development API key
+BASE_URL="${API_BASE_URL:-http://localhost:8000}"
+API_KEY="${API_KEY}"
+
+# Check if API key is provided
+if [ -z "$API_KEY" ]; then
+    echo "ERROR: API_KEY environment variable is required"
+    echo "Usage: API_KEY=your_api_key bash docs/examples/curl_examples.sh"
+    exit 1
+fi
 
 # Helper function to make authenticated requests
 make_request() {

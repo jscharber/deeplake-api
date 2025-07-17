@@ -40,7 +40,7 @@ def setup_local_environment():
         
         # Authentication (simplified for local dev)
         "AUTH_ENABLED": "true",
-        "JWT_SECRET_KEY": "local-dev-secret-key-not-for-production",
+        "JWT_SECRET_KEY": os.getenv("JWT_SECRET_KEY", "local-dev-secret-key-not-for-production"),
         "JWT_ALGORITHM": "HS256",
         "JWT_EXPIRATION_HOURS": "24",
         

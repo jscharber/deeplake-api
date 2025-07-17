@@ -44,7 +44,7 @@ class HealthServicer(LoggingMixin):
             
             return {
                 "status": overall_status,
-                "service": "Deep Lake Vector Service",
+                "service": "Tributary AI services for DeepLake",
                 "version": "1.0.0",
                 "timestamp": datetime.now(timezone.utc).isoformat(),
                 "dependencies": dependencies

@@ -6,9 +6,15 @@ Run this to clean up test datasets or reset the service state.
 
 import requests
 import sys
+import os
 
-BASE_URL = "http://localhost:8000"
-API_KEY = "dev-12345-abcdef-67890-ghijkl"
+BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+API_KEY = os.getenv("API_KEY")
+
+if not API_KEY:
+    print("ERROR: API_KEY environment variable is required")
+    print("Usage: API_KEY=your_api_key python scripts/cleanup_datasets.py")
+    sys.exit(1)
 
 def cleanup_all_datasets():
     """Clean up all existing datasets."""

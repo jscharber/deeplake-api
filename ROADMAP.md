@@ -22,11 +22,11 @@ This Deep Lake API service provides a solid foundation with **core vector databa
   - [ ] Configurable search strategies
 
 ### 1.2 Observability & Configuration
-- [ ] **Remove hardcoded security values** - Eliminate security risks
-  - [ ] Remove hardcoded API keys from examples and scripts (`dev-12345-abcdef-67890-ghijkl`)
-  - [ ] Replace default JWT secret with environment variable requirement
-  - [ ] Remove hardcoded authentication credentials from test files
-  - [ ] Add validation for required environment variables
+- [x] **Remove hardcoded security values** - ✅ **COMPLETED v1.0.1**
+  - [x] Remove hardcoded API keys from examples and scripts (`dev-12345-abcdef-67890-ghijkl`)
+  - [x] Replace default JWT secret with environment variable requirement
+  - [x] Remove hardcoded authentication credentials from test files
+  - [x] Add validation for required environment variables
 - [ ] **Operational dashboards** - Real-time monitoring and visualization
   - [ ] Grafana dashboards for system metrics (CPU, memory, disk)
   - [ ] Application performance dashboards (query latency, throughput)
@@ -48,7 +48,7 @@ This Deep Lake API service provides a solid foundation with **core vector databa
 
 ### 1.3 Vector Database Optimizations
 - [ ] **Distance metrics expansion** - Beyond L2 norm
-  - [ ] Cosine similarity (high priority)
+  - [ ] Cosine similarity (high priority) - 🚧 **IN PROGRESS**
   - [ ] Dot product similarity
   - [ ] Manhattan distance
   - [ ] Hamming distance for binary vectors
@@ -296,12 +296,30 @@ This Deep Lake API service provides a solid foundation with **core vector databa
 
 ## 💡 Quick Wins (Next 30 Days)
 
-1. **Remove hardcoded API keys** - Critical security issue
+1. ✅ **Remove hardcoded API keys** - ✅ **COMPLETED v1.0.1**
 2. **Add operational dashboards** - Grafana dashboards for monitoring
-3. **Implement cosine similarity** - High impact, low effort
+3. **Implement cosine similarity** - High impact, low effort 🚧 **IN PROGRESS**
 4. **Add metadata filtering** - Essential for practical use
 5. **Configure alerting system** - Proactive monitoring
 6. **Add bulk import/export** - Operational necessity
+
+## 🎯 Completed in v1.0.1 (2025-07-16)
+
+### ✅ Security Hardening
+- **Hardcoded API Keys Removed**: Eliminated `dev-12345-abcdef-67890-ghijkl` from all examples and scripts
+- **JWT Secret Environment Variable**: Now required via `JWT_SECRET_KEY` environment variable
+- **API Key Generation**: Added secure `generate_api_key_quick.py` tool
+- **Environment Configuration**: Added comprehensive `.env` support and `bashrc_exports.sh` template
+
+### ✅ Documentation Access
+- **Always-Available Docs**: `/docs` and `/redoc` endpoints now accessible in all environments
+- **Development Experience**: Improved developer experience with persistent documentation access
+- **Interactive Testing**: Swagger UI available for API testing in all environments
+
+### ✅ Service Startup
+- **uv Compatibility**: Fixed all issues with `uv run` startup
+- **Configuration Validation**: Enhanced Pydantic settings with better error messages
+- **Environment Variables**: Comprehensive support for environment-based configuration
 
 ---
 

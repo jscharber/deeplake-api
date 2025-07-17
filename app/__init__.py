@@ -1,4 +1,4 @@
-"""Deep Lake Vector Service - Universal vector database service with HTTP and gRPC APIs."""
+"""Tributary AI services for DeepLake - Universal vector database service with HTTP and gRPC APIs."""
 
 __version__ = "1.0.0"
 __author__ = "Deep Lake Team"

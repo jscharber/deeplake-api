@@ -1,4 +1,4 @@
-"""Custom exceptions for the Deep Lake Vector Service."""
+"""Custom exceptions for the Tributary AI services for DeepLake."""
 
 from typing import Optional, Dict, Any
 

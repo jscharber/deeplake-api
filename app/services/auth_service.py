@@ -17,6 +17,11 @@ class AuthService(LoggingMixin):
     
     def __init__(self) -> None:
         super().__init__()
+        
+        # Validate required JWT secret key
+        if not settings.auth.jwt_secret_key:
+            raise ValueError("JWT_SECRET_KEY environment variable is required")
+        
         self.secret_key = settings.auth.jwt_secret_key
         self.algorithm = settings.auth.jwt_algorithm
         self.expiration_hours = settings.auth.jwt_expiration_hours
@@ -45,13 +50,16 @@ class AuthService(LoggingMixin):
         }
         self.tenants['default'] = default_tenant
         
-        # Create a default API key with fixed value for development
-        api_key = self._create_default_api_key(
-            tenant_id='default',
-            name='Default Development API Key',
-            permissions=['read', 'write', 'admin']
-        )
-        self.logger.info("Default tenant and API key created", tenant_id='default', api_key=api_key)
+        # Create a default API key only if one is provided via environment variable
+        if settings.development.default_api_key:
+            api_key = self._create_default_api_key(
+                tenant_id='default',
+                name='Default Development API Key',
+                permissions=['read', 'write', 'admin']
+            )
+            self.logger.info("Default tenant and API key created", tenant_id='default', api_key=api_key)
+        else:
+            self.logger.warning("No default API key provided. Use generate_api_key() to create one or set DEV_DEFAULT_API_KEY environment variable.")
     
     def _create_default_api_key(
         self,

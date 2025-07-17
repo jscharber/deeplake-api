@@ -28,7 +28,7 @@ logger = get_logger(__name__)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> Any:
     """Application lifespan manager."""
-    logger.info("Starting Deep Lake Vector Service", version="1.0.0")
+    logger.info("Starting Tributary AI services for DeepLake", version="1.0.0")
 
     # Initialize services
     try:
@@ -70,7 +70,7 @@ async def lifespan(app: FastAPI) -> Any:
 
     finally:
         # Shutdown services
-        logger.info("Shutting down Deep Lake Vector Service")
+        logger.info("Shutting down Tributary AI services for DeepLake")
 
         try:
             if hasattr(app.state, "deeplake_service"):
@@ -85,15 +85,54 @@ async def lifespan(app: FastAPI) -> Any:
             logger.error("Error during service shutdown", error=str(e))
 
 
+# Custom OpenAPI schema with proper security definitions
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    
+    from fastapi.openapi.utils import get_openapi
+    
+    openapi_schema = get_openapi(
+        title="Tributary AI services for DeepLake",
+        version="1.0.0",
+        description="Universal DeepLake vector database service with HTTP and gRPC APIs",
+        routes=app.routes,
+    )
+    
+    # Add custom security schemes
+    openapi_schema["components"]["securitySchemes"] = {
+        "APIKeyHeader": {
+            "type": "apiKey",
+            "in": "header",
+            "name": "Authorization",
+            "description": "API Key authentication. Enter your API key directly (without 'ApiKey' prefix). The system will automatically format it as 'ApiKey your-key'"
+        }
+    }
+    
+    # Apply security to all endpoints except health checks
+    for path_item in openapi_schema["paths"].values():
+        for operation in path_item.values():
+            if isinstance(operation, dict) and "operationId" in operation:
+                # Skip health endpoints (they should be public)
+                if not any(tag in operation.get("tags", []) for tag in ["health"]):
+                    # Override any existing security with our APIKeyHeader
+                    operation["security"] = [{"APIKeyHeader": []}]
+    
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
 # Create FastAPI app
 app = FastAPI(
-    title="Deep Lake Vector Service",
-    description="Universal Deep Lake vector database service with HTTP and gRPC APIs",
+    title="Tributary AI services for DeepLake",
+    description="Universal DeepLake vector database service with HTTP and gRPC APIs",
     version="1.0.0",
     lifespan=lifespan,
-    docs_url="/docs" if settings.development.debug else None,
-    redoc_url="/redoc" if settings.development.debug else None,
+    docs_url="/docs",
+    redoc_url="/redoc",
 )
+
+# Set custom OpenAPI schema
+app.openapi = custom_openapi
 
 # Add CORS middleware
 app.add_middleware(
@@ -265,7 +304,8 @@ async def root() -> Dict[str, Any]:
         "service": "Deep Lake Vector Service",
         "version": "1.0.0",
         "status": "running",
-        "docs_url": "/docs" if settings.development.debug else None,
+        "docs_url": "/docs",
+        "redoc_url": "/redoc",
         "health_url": "/api/v1/health",
     }
 

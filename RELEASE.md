@@ -11,6 +11,131 @@ All notable releases of this project are documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2025-07-16
+
+### 🔒 Security Hardening Release
+
+This release addresses critical security vulnerabilities and improves the overall security posture of the Deep Lake Vector Service.
+
+### 🚨 **BREAKING CHANGES**
+
+#### Authentication Changes
+- **Hardcoded API Keys Removed**: The default development API key `dev-12345-abcdef-67890-ghijkl` has been removed
+- **JWT Secret Required**: `JWT_SECRET_KEY` environment variable is now required for service startup
+- **Environment Variables**: All authentication now requires proper environment variable configuration
+
+#### Migration Required
+1. **Generate JWT Secret**: 
+   ```bash
+   export JWT_SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
+   ```
+
+2. **Generate API Key**:
+   ```bash
+   python scripts/generate_api_key_quick.py
+   ```
+
+3. **Update Environment**: Use the provided `bashrc_exports.sh` template or create a `.env` file
+
+### ✅ **New Features**
+
+#### Always-Available Documentation
+- **API Documentation**: `/docs` and `/redoc` endpoints now always accessible
+- **Interactive Testing**: Swagger UI available in all environments for API testing
+- **Development Experience**: Improved developer experience with persistent documentation access
+
+#### Enhanced Configuration
+- **Environment Support**: Comprehensive `.env` file support for `uv run`
+- **Validation**: Improved Pydantic settings with better error messages
+- **Flexibility**: Added support for optional configuration parameters
+
+#### Security Tools
+- **API Key Generator**: `generate_api_key_quick.py` for secure key creation
+- **Environment Templates**: `bashrc_exports.sh` for easy environment setup
+- **Secure Defaults**: All security-sensitive values now use secure generation
+
+### 🔧 **Improvements**
+
+#### Service Startup
+- **uv Compatibility**: Fixed all issues with `uv run` startup
+- **Error Handling**: Better error messages for missing configuration
+- **Validation**: Comprehensive validation of required environment variables
+
+#### Documentation Updates
+- **Security Examples**: All examples now use environment variables
+- **Configuration Guide**: Updated setup instructions for secure configuration
+- **Best Practices**: Added security best practices throughout documentation
+
+### 🐛 **Bug Fixes**
+
+#### Authentication System
+- **Pydantic Validation**: Fixed environment variable loading issues
+- **JWT Configuration**: Resolved JWT_SECRET_KEY mapping problems
+- **Service Startup**: Fixed startup failures with missing configuration
+
+#### Documentation Access
+- **Conditional Logic**: Removed debug-only restrictions on documentation
+- **Endpoint Availability**: Documentation endpoints now work in all environments
+- **Root Endpoint**: Improved root endpoint to show available documentation
+
+### 📚 **Documentation**
+
+#### Updated Files
+- **CHANGELOG.md**: Comprehensive change documentation
+- **ROADMAP.md**: Updated to reflect completed security improvements
+- **README.md**: Revised authentication and configuration sections
+- **SECURITY.md**: Enhanced security documentation
+
+#### New Files
+- **bashrc_exports.sh**: Environment variable configuration template
+- **generate_api_key_quick.py**: Secure API key generation tool
+- **.env**: Production-ready environment configuration example
+
+### 🔐 **Security Impact**
+
+#### Eliminated Risks
+- **Hardcoded Credentials**: All hardcoded API keys and secrets removed
+- **Test Exposure**: Cleaned up test files to prevent credential leakage
+- **Example Security**: All examples now use environment variables
+
+#### Enhanced Security
+- **Secure Generation**: All keys now use cryptographically secure generation
+- **Environment Isolation**: Proper separation of configuration from code
+- **Validation**: Strong validation of security-sensitive configuration
+
+### 🚀 **Getting Started with v1.0.1**
+
+1. **Update Environment**:
+   ```bash
+   # Generate JWT secret
+   export JWT_SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
+   
+   # Generate API key
+   python scripts/generate_api_key_quick.py
+   export API_KEY="your-generated-api-key"
+   ```
+
+2. **Start Service**:
+   ```bash
+   uv run uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+   ```
+
+3. **Test Documentation**:
+   ```bash
+   # Visit http://localhost:8000/docs
+   # Click "Authorize" and enter your API key
+   ```
+
+### 🎯 **Next Steps**
+
+The security foundation is now solid. Next release will focus on:
+- Cosine similarity distance metric implementation
+- Advanced metadata filtering
+- Grafana monitoring dashboards
+- Performance optimizations
+
+---
+
 ## [1.0.0] - 2025-07-16
 
 ### Added
