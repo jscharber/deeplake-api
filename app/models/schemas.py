@@ -29,7 +29,7 @@ class DatasetCreate(BaseModel):
     description: Optional[str] = Field(None, max_length=500, description="Dataset description")
     dimensions: int = Field(..., ge=1, le=10000, description="Vector dimensions")
     metric_type: str = Field(default="cosine", description="Distance metric type")
-    index_type: str = Field(default="default", description="Index type")
+    index_type: str = Field(default="default", description="Index type: default, flat, hnsw, ivf")
     metadata: Optional[Dict[str, str]] = Field(default=None, description="Dataset metadata")
     storage_location: Optional[str] = Field(None, description="Custom storage location")
     overwrite: bool = Field(default=False, description="Overwrite existing dataset")
@@ -40,6 +40,14 @@ class DatasetCreate(BaseModel):
         allowed_metrics = ['cosine', 'euclidean', 'manhattan', 'dot_product']
         if v not in allowed_metrics:
             raise ValueError(f"metric_type must be one of {allowed_metrics}")
+        return v
+    
+    @field_validator('index_type')
+    @classmethod
+    def validate_index_type(cls, v: str) -> str:
+        allowed_types = ['default', 'flat', 'hnsw', 'ivf']
+        if v not in allowed_types:
+            raise ValueError(f"index_type must be one of {allowed_types}")
         return v
 
 
@@ -60,7 +68,7 @@ class DatasetResponse(BaseModel):
     dimensions: int
     metric_type: str
     index_type: str
-    metadata: Dict[str, str]
+    metadata: Dict[str, Any]
     storage_location: str
     vector_count: int = 0
     storage_size: int = 0
@@ -88,7 +96,7 @@ class VectorCreate(BaseModel):
     values: List[float] = Field(..., description="Vector values")
     content: Optional[str] = Field(None, description="Text content")
     content_hash: Optional[str] = Field(None, description="Content hash")
-    metadata: Optional[Dict[str, str]] = Field(default=None, description="Vector metadata")
+    metadata: Optional[Dict[str, Any]] = Field(default=None, description="Vector metadata - supports any JSON-serializable data")
     content_type: Optional[str] = Field(None, description="Content type")
     language: Optional[str] = Field(None, description="Content language")
     chunk_index: Optional[int] = Field(None, ge=0, description="Chunk index")
@@ -110,7 +118,7 @@ class VectorUpdate(BaseModel):
     
     values: Optional[List[float]] = None
     content: Optional[str] = None
-    metadata: Optional[Dict[str, str]] = None
+    metadata: Optional[Dict[str, Any]] = None
     content_type: Optional[str] = None
     language: Optional[str] = None
 
@@ -125,7 +133,7 @@ class VectorResponse(BaseModel):
     values: List[float]
     content: Optional[str] = None
     content_hash: Optional[str] = None
-    metadata: Dict[str, str]
+    metadata: Dict[str, Any]
     content_type: Optional[str] = None
     language: Optional[str] = None
     chunk_index: Optional[int] = None
@@ -164,7 +172,7 @@ class SearchOptions(BaseModel):
     metric_type: Optional[str] = Field(None, description="Distance metric override")
     include_content: bool = Field(default=True, description="Include content in results")
     include_metadata: bool = Field(default=True, description="Include metadata in results")
-    filters: Optional[Dict[str, str]] = Field(default=None, description="Metadata filters")
+    filters: Optional[Union[Dict[str, Any], str]] = Field(default=None, description="Advanced metadata filters - supports simple dict, complex expressions, or SQL-like strings")
     deduplicate: bool = Field(default=False, description="Remove duplicate results")
     group_by_document: bool = Field(default=False, description="Group results by document")
     rerank: bool = Field(default=False, description="Apply reranking")
@@ -205,6 +213,7 @@ class HybridSearchRequest(BaseModel):
     options: Optional[SearchOptions] = Field(default=None)
     vector_weight: float = Field(default=0.5, ge=0.0, le=1.0, description="Vector search weight")
     text_weight: float = Field(default=0.5, ge=0.0, le=1.0, description="Text search weight")
+    fusion_method: Optional[str] = Field(default="weighted_sum", description="Result fusion method: weighted_sum, reciprocal_rank_fusion, comb_sum, comb_mnz, borda_count")
     
     @model_validator(mode='after')
     def validate_weights(self) -> 'HybridSearchRequest':

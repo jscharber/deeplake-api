@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Simple API Key Generator for Deep Lake Vector Service
+Simple API Key Generator for Tributary AI services for DeepLake
 ==================================================
 
-This script generates a secure API key for the Deep Lake Vector Service.
+This script generates a secure API key for Tributary AI services for DeepLake.
 """
 
 import os
@@ -23,7 +23,7 @@ def generate_api_key():
 
 def main():
     """Generate API key and show usage instructions."""
-    print("🔑 Deep Lake Vector Service - API Key Generator")
+    print("🔑 Tributary AI services for DeepLake - API Key Generator")
     print("=" * 50)
     
     # Check for JWT secret

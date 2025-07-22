@@ -1,4 +1,4 @@
-# Deep Lake Vector Service - Local Development Guide
+# Tributary AI services for DeepLake - Local Development Guide
 
 ## 🚀 Quick Start
 

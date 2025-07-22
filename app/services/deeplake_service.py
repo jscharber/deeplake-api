@@ -25,6 +25,7 @@ from app.models.exceptions import (
     VectorNotFoundException, InvalidVectorDimensionsException,
     InvalidSearchParametersException, StorageException
 )
+from app.services.index_service import IndexService, IndexType, IndexConfig, HNSWParameters, IVFParameters
 
 
 class DeepLakeService(LoggingMixin):
@@ -36,7 +37,8 @@ class DeepLakeService(LoggingMixin):
         self.token = settings.deeplake.token
         self.org_id = settings.deeplake.org_id
         self.datasets: Dict[str, Any] = {}
-        self.executor = ThreadPoolExecutor(max_workers=10)
+        self.executor = ThreadPoolExecutor(max_workers=settings.performance.deeplake_thread_pool_workers)
+        self.index_service = IndexService()
         
         # Create storage directory if it doesn't exist
         os.makedirs(self.storage_location, exist_ok=True)
@@ -46,6 +48,7 @@ class DeepLakeService(LoggingMixin):
     async def close(self) -> None:
         """Close the service and clean up resources."""
         self.executor.shutdown(wait=True)
+        await self.index_service.close()
         for dataset in self.datasets.values():
             try:
                 if hasattr(dataset, 'close'):
@@ -123,15 +126,24 @@ class DeepLakeService(LoggingMixin):
             if self.token:
                 create_kwargs["token"] = self.token
             
-            # Define simplified schema for Deep Lake 4.0 compatibility
+            # Define comprehensive schema for Deep Lake 4.0 compatibility
             import deeplake
-            # Schema matching the corrected payload format
+            # Schema matching the corrected payload format with metadata support
             schema = {
                 'id': deeplake.types.Text(),
                 'document_id': deeplake.types.Text(), 
                 'embedding': deeplake.types.Array(deeplake.types.Float32(), shape=[dataset_create.dimensions]),
                 'content': deeplake.types.Text(),
-                'chunk_count': deeplake.types.Int32()
+                'chunk_count': deeplake.types.Int32(),
+                'metadata': deeplake.types.Text(),  # JSON string for metadata
+                'chunk_id': deeplake.types.Text(),
+                'content_hash': deeplake.types.Text(),
+                'content_type': deeplake.types.Text(),
+                'language': deeplake.types.Text(),
+                'chunk_index': deeplake.types.Int32(),
+                'model': deeplake.types.Text(),
+                'created_at': deeplake.types.Text(),
+                'updated_at': deeplake.types.Text()
             }
             
             create_kwargs["schema"] = schema
@@ -226,6 +238,9 @@ class DeepLakeService(LoggingMixin):
                 tenant_id=tenant_id
             )
             
+        except DatasetNotFoundException:
+            # Re-raise DatasetNotFoundException as-is
+            raise
         except Exception as e:
             self.logger.error("Failed to get dataset", dataset_id=dataset_id, error=str(e))
             raise StorageException(f"Failed to get dataset: {str(e)}", "get_dataset")
@@ -363,13 +378,22 @@ class DeepLakeService(LoggingMixin):
                     import json
                     metadata_json = json.dumps(vector.metadata or {})
                     
-                    # Data matching the corrected payload format
+                    # Data matching the comprehensive payload format with metadata
                     vector_data = {
                         'id': str(vector_id),
                         'document_id': str(vector.document_id),
                         'embedding': np.array(vector.values, dtype=np.float32),
                         'content': str(vector.content or ''),
-                        'chunk_count': int(vector.chunk_count or 1)
+                        'chunk_count': int(vector.chunk_count or 1),
+                        'metadata': metadata_json,
+                        'chunk_id': str(vector.chunk_id or ''),
+                        'content_hash': content_hash,
+                        'content_type': str(vector.content_type or ''),
+                        'language': str(vector.language or ''),
+                        'chunk_index': int(vector.chunk_index or 0),
+                        'model': str(vector.model or ''),
+                        'created_at': now,
+                        'updated_at': now
                     }
                     
                     self.logger.debug("Appending vector to dataset", vector_id=vector_id, data_keys=list(vector_data.keys()))
@@ -393,9 +417,36 @@ class DeepLakeService(LoggingMixin):
                     error_messages.append(f"Vector {vector.id or 'unknown'}: {str(e)}")
                     self.logger.warning("Failed to insert vector", vector_id=vector.id, error=str(e))
             
-            # Commit changes
+            # Commit changes (with retry for concurrent access)
             loop = asyncio.get_event_loop()
-            await loop.run_in_executor(self.executor, dataset.commit)
+            max_retries = 5
+            for retry in range(max_retries):
+                try:
+                    await loop.run_in_executor(self.executor, dataset.commit)
+                    break
+                except RuntimeError as e:
+                    # Check for lock file errors (including the specific pattern seen in logs)
+                    error_str = str(e).lower()
+                    if ("index.lock" in error_str or "lock" in error_str) and retry < max_retries - 1:
+                        # Wait longer for heavily contended operations
+                        wait_time = 0.2 * (2 ** retry)  # Exponential backoff: 0.2, 0.4, 0.8, 1.6 seconds
+                        await asyncio.sleep(wait_time)
+                        self.logger.warning(f"Dataset commit retry {retry + 1} after {wait_time}s", dataset_id=dataset_id, error=str(e))
+                        continue
+                    else:
+                        raise
+            
+            # Check if we need to build/update index
+            dataset_info = await self._load_dataset_metadata(dataset_path)
+            index_type_str = dataset_info.get('index_type', 'default')
+            
+            # Build index if we have enough vectors and index type is specified
+            vector_count = len(dataset)
+            if vector_count >= 1000 and index_type_str != 'flat':
+                try:
+                    await self._build_or_update_index(dataset, dataset_info, dataset_id)
+                except Exception as e:
+                    self.logger.warning(f"Failed to build index: {e}, continuing without index")
             
             processing_time = (time.time() - start_time) * 1000
             
@@ -451,33 +502,170 @@ class DeepLakeService(LoggingMixin):
             # Perform search
             query_embedding = np.array(query_vector, dtype=np.float32)
             
+            # Get dataset metric type from metadata
+            dataset_info = await self._load_dataset_metadata(dataset_path)
+            dataset_metric = dataset_info.get('metric_type', 'cosine')
+            
+            # Use search options metric override if provided
+            metric_type = options.metric_type or dataset_metric
+            
+            # Get index type and search parameters
+            index_type_str = dataset_info.get('index_type', 'default')
+            try:
+                index_type = IndexType(index_type_str)
+            except ValueError:
+                index_type = IndexType.DEFAULT
+            
+            # Get search parameters based on index type
+            search_params = self.index_service.get_search_params(
+                index_type,
+                {
+                    "ef_search": options.ef_search,
+                    "nprobe": options.nprobe
+                } if options.ef_search or options.nprobe else None
+            )
+            
+            # Build search query based on metric type
+            # Note: Deep Lake may not support all distance functions in SQL queries
+            # We'll use a simple approach that gets all results and then sort/filter in Python
+            search_query = f"SELECT * LIMIT {options.top_k * 10}"  # Get more results to sort later
+            
             # Use Deep Lake's search functionality (4.0 API)
+            self.logger.info(f"Executing search query: {search_query}")
             loop = asyncio.get_event_loop()
             search_results = await loop.run_in_executor(
                 self.executor,
-                lambda: dataset.query(
-                    f"SELECT * ORDER BY l2_norm(embedding - ARRAY{query_embedding.tolist()}) ASC LIMIT {options.top_k}"
-                )
+                lambda: dataset.query(search_query)
             )
+            self.logger.info(f"Search returned {len(search_results)} raw results")
             
-            # Process results
-            results = []
+            # Process results and calculate similarities
+            candidates = []
+            self.logger.info(f"Processing {len(search_results)} search results")
             for i, result in enumerate(search_results):
                 try:
+                    self.logger.debug(f"Processing result {i}: {result}")
+                    # DeepLake 4.0 returns RowView objects, not dictionaries
+                    # Extract embedding values
+                    embedding_values = []
+                    try:
+                        embedding_data = result['embedding']
+                        if hasattr(embedding_data, 'tolist'):
+                            embedding_values = embedding_data.tolist()
+                        elif hasattr(embedding_data, '__iter__'):
+                            embedding_values = list(embedding_data)
+                        else:
+                            embedding_values = []
+                    except Exception as e:
+                        self.logger.warning(f"Failed to extract embedding: {e}")
+                        embedding_values = []
+                    
+                    # Extract fields using string keys for RowView
+                    try:
+                        result_id = result['id']
+                    except:
+                        result_id = ''
+                    
+                    try:
+                        result_document_id = result['document_id']
+                    except:
+                        result_document_id = ''
+                    
+                    try:
+                        result_content = result['content']
+                    except:
+                        result_content = ''
+                    
+                    try:
+                        result_chunk_id = result['chunk_id']
+                    except:
+                        result_chunk_id = ''
+                    
+                    try:
+                        result_metadata_json = result['metadata']
+                        # Parse JSON metadata
+                        import json
+                        result_metadata = json.loads(result_metadata_json) if result_metadata_json else {}
+                    except:
+                        result_metadata = {}
+                    
+                    try:
+                        result_content_hash = result['content_hash']
+                    except:
+                        result_content_hash = ''
+                    
+                    try:
+                        result_content_type = result['content_type']
+                    except:
+                        result_content_type = ''
+                    
+                    try:
+                        result_language = result['language']
+                    except:
+                        result_language = ''
+                    
+                    try:
+                        result_chunk_index = result['chunk_index']
+                    except:
+                        result_chunk_index = 0
+                    
+                    try:
+                        result_model = result['model']
+                    except:
+                        result_model = ''
+                    
+                    try:
+                        result_created_at = result['created_at']
+                    except:
+                        result_created_at = datetime.now(timezone.utc).isoformat()
+                    
+                    try:
+                        result_updated_at = result['updated_at']
+                    except:
+                        result_updated_at = datetime.now(timezone.utc).isoformat()
+                    
+                    try:
+                        result_chunk_count = result['chunk_count']
+                    except:
+                        result_chunk_count = 1
+                    
                     vector_data = {
-                        'id': result['id'][0] if result['id'] else '',
-                        'document_id': result['document_id'][0] if result['document_id'] else '',
-                        'chunk_id': result.get('chunk_id', [''])[0] if result.get('chunk_id') else '',
-                        'values': result['embedding'][0].tolist() if result['embedding'] else [],
-                        'content': result['content'][0] if result['content'] else '',
-                        'metadata': result.get('metadata', [{}])[0] if result.get('metadata') else {},
-                        'created_at': datetime.now(timezone.utc),
-                        'updated_at': datetime.now(timezone.utc),
+                        'id': result_id,
+                        'document_id': result_document_id,
+                        'chunk_id': result_chunk_id,
+                        'values': embedding_values,
+                        'content': result_content,
+                        'metadata': result_metadata,
+                        'content_hash': result_content_hash,
+                        'content_type': result_content_type,
+                        'language': result_language,
+                        'chunk_index': result_chunk_index,
+                        'chunk_count': result_chunk_count,
+                        'model': result_model,
+                        'created_at': result_created_at,
+                        'updated_at': result_updated_at,
                     }
                     
-                    # Calculate similarity score
-                    distance = np.linalg.norm(query_embedding - np.array(vector_data['values']))
-                    score = 1.0 / (1.0 + distance) if distance > 0 else 1.0
+                    
+                    # Calculate similarity score based on metric type
+                    vector_values = np.array(vector_data['values'])
+                    
+                    if metric_type.lower() == 'cosine':
+                        # Calculate cosine similarity
+                        dot_product = np.dot(query_embedding, vector_values)
+                        query_norm = np.linalg.norm(query_embedding)
+                        vector_norm = np.linalg.norm(vector_values)
+                        
+                        if query_norm == 0 or vector_norm == 0:
+                            score = 0.0
+                            distance = 1.0
+                        else:
+                            score = dot_product / (query_norm * vector_norm)
+                            distance = 1.0 - score  # Convert similarity to distance
+                    else:  # L2 or euclidean
+                        # Calculate L2 distance
+                        distance = np.linalg.norm(query_embedding - vector_values)
+                        score = 1.0 / (1.0 + distance) if distance > 0 else 1.0
                     
                     vector_response = VectorResponse(
                         id=vector_data['id'],
@@ -486,23 +674,92 @@ class DeepLakeService(LoggingMixin):
                         chunk_id=vector_data['chunk_id'],
                         values=vector_data['values'],
                         content=vector_data['content'] if options.include_content else None,
+                        content_hash=vector_data['content_hash'],
                         metadata=vector_data['metadata'] if options.include_metadata else {},
+                        content_type=vector_data['content_type'],
+                        language=vector_data['language'],
+                        chunk_index=vector_data['chunk_index'],
+                        chunk_count=vector_data['chunk_count'],
+                        model=vector_data['model'],
                         dimensions=len(vector_data['values']),
                         created_at=vector_data['created_at'],
                         updated_at=vector_data['updated_at'],
                         tenant_id=tenant_id
                     )
                     
-                    results.append(SearchResultItem(
-                        vector=vector_response,
-                        score=float(score),
-                        distance=float(distance),
-                        rank=i + 1
-                    ))
+                    # Store candidate with score for sorting
+                    candidates.append({
+                        'vector_response': vector_response,
+                        'score': float(score),
+                        'distance': float(distance),
+                        'original_index': i
+                    })
                     
                 except Exception as e:
                     self.logger.warning("Failed to process search result", index=i, error=str(e))
                     continue
+            
+            # Sort candidates by score (descending for similarities, ascending for distances)
+            if metric_type.lower() == 'cosine':
+                # For cosine similarity, higher scores are better
+                candidates.sort(key=lambda x: x['score'], reverse=True)
+            else:
+                # For L2 distance, lower distances are better (but we use score which is inverse)
+                candidates.sort(key=lambda x: x['score'], reverse=True)
+            
+            # Apply filtering and create final results
+            results = []
+            
+            # Parse metadata filters if provided
+            metadata_filter_expr = None
+            if options.filters:
+                from app.services.metadata_filter import metadata_filter_service
+                try:
+                    metadata_filter_expr = metadata_filter_service.parse_filter_expression(options.filters)
+                    self.logger.debug("Parsed metadata filter expression", filter_expr=metadata_filter_expr)
+                except Exception as e:
+                    self.logger.error("Failed to parse metadata filter", error=str(e))
+                    raise InvalidSearchParametersException(f"Invalid metadata filter: {e}")
+            
+            for i, candidate in enumerate(candidates):
+                score = candidate['score']
+                distance = candidate['distance']
+                vector_response = candidate['vector_response']
+                
+                # Apply threshold filtering if specified
+                if options.threshold is not None:
+                    if score < options.threshold:
+                        continue
+                
+                # Apply min_score filtering if specified
+                if options.min_score is not None and score < options.min_score:
+                    continue
+                
+                # Apply max_distance filtering if specified  
+                if options.max_distance is not None and distance > options.max_distance:
+                    continue
+                
+                # Apply metadata filtering if specified
+                if metadata_filter_expr:
+                    try:
+                        if not metadata_filter_service.apply_filter(vector_response.metadata, metadata_filter_expr):
+                            continue
+                    except Exception as e:
+                        self.logger.warning("Failed to apply metadata filter", error=str(e), metadata=vector_response.metadata)
+                        continue
+                
+                # Stop if we have enough results
+                if len(results) >= options.top_k:
+                    break
+                
+                results.append(SearchResultItem(
+                    vector=vector_response,
+                    score=score,
+                    distance=distance,
+                    rank=len(results) + 1
+                ))
+            
+            self.logger.info(f"Filtered to {len(results)} final results from {len(candidates)} candidates")
             
             query_time = (time.time() - start_time) * 1000
             
@@ -869,10 +1126,57 @@ class DeepLakeService(LoggingMixin):
         except Exception:
             return False
     
+    async def get_dataset_stats(
+        self,
+        dataset_id: str,
+        tenant_id: Optional[str] = None
+    ) -> "DatasetStats":
+        """Get dataset statistics."""
+        try:
+            # Get dataset info
+            dataset_response = await self.get_dataset(dataset_id, tenant_id)
+            
+            # Load dataset to get actual stats
+            dataset_key = self._get_dataset_key(dataset_id, tenant_id)
+            dataset_path = self._get_dataset_path(dataset_id, tenant_id)
+            
+            if dataset_key not in self.datasets:
+                self.datasets[dataset_key] = await self._load_dataset(dataset_path, read_only=True)
+            
+            dataset = self.datasets[dataset_key]
+            
+            # Get vector count
+            loop = asyncio.get_event_loop()
+            vector_count = await loop.run_in_executor(
+                self.executor,
+                lambda: len(dataset) if dataset else 0
+            )
+            
+            # Get storage size
+            storage_size = self._get_directory_size(dataset_path)
+            
+            # Create metadata stats (simplified)
+            metadata_stats = {"total_vectors": vector_count}
+            
+            # Import here to avoid circular imports
+            from app.models.schemas import DatasetStats
+            
+            return DatasetStats(
+                dataset=dataset_response,
+                vector_count=vector_count,
+                storage_size=storage_size,
+                metadata_stats=metadata_stats,
+                index_stats=None
+            )
+            
+        except Exception as e:
+            self.logger.error("Failed to get dataset stats", dataset_id=dataset_id, error=str(e))
+            raise StorageException(f"Failed to get dataset statistics: {str(e)}", "get_dataset_stats")
+    
     def _is_deeplake_dataset(self, path: str) -> bool:
         """Check if a directory is a Deep Lake dataset."""
         try:
-            return os.path.exists(os.path.join(path, 'dataset_meta.json'))
+            return os.path.exists(os.path.join(path, 'dataset_metadata.json'))
         except Exception:
             return False
     
@@ -922,3 +1226,55 @@ class DeepLakeService(LoggingMixin):
             return total_size
         except Exception:
             return 0
+    
+    async def _build_or_update_index(self, dataset: Any, dataset_info: Dict[str, Any], dataset_id: str) -> None:
+        """Build or update index for the dataset."""
+        index_type_str = dataset_info.get('index_type', 'default')
+        
+        # Map string to enum
+        try:
+            index_type = IndexType(index_type_str)
+        except ValueError:
+            index_type = IndexType.DEFAULT
+        
+        # Get index parameters based on type
+        if index_type == IndexType.HNSW:
+            hnsw_params = HNSWParameters(
+                m=16,
+                ef_construction=200,
+                ef_search=50
+            )
+            index_config = IndexConfig(
+                index_type=index_type,
+                metric_type=dataset_info.get('metric_type', 'cosine'),
+                dimensions=dataset_info.get('dimensions', 0),
+                hnsw_params=hnsw_params
+            )
+        elif index_type == IndexType.IVF:
+            ivf_params = IVFParameters(
+                nlist=100,
+                nprobe=10
+            )
+            index_config = IndexConfig(
+                index_type=index_type,
+                metric_type=dataset_info.get('metric_type', 'cosine'),
+                dimensions=dataset_info.get('dimensions', 0),
+                ivf_params=ivf_params
+            )
+        else:
+            index_config = IndexConfig(
+                index_type=index_type,
+                metric_type=dataset_info.get('metric_type', 'cosine'),
+                dimensions=dataset_info.get('dimensions', 0)
+            )
+        
+        # Build the index
+        stats = await self.index_service.create_index(dataset, index_config, force_rebuild=False)
+        
+        self.logger.info(
+            "Index built/updated",
+            dataset_id=dataset_id,
+            index_type=stats.index_type,
+            vectors=stats.total_vectors,
+            build_time=stats.build_time_seconds
+        )

@@ -1,13 +1,13 @@
 #!/bin/bash
 
-# Build script for Deep Lake Vector Service
+# Build script for Tributary AI services for DeepLake
 
 set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 
-echo "Building Deep Lake Vector Service..."
+echo "Building Tributary AI services for DeepLake..."
 echo "Project root: $PROJECT_ROOT"
 
 # Change to project root

@@ -1,4 +1,4 @@
-# Deep Lake Vector Service Dockerfile
+# Tributary AI services for DeepLake Dockerfile
 FROM python:3.11-slim
 
 # Set working directory

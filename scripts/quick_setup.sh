@@ -1,8 +1,8 @@
 #!/bin/bash
-# Quick Setup Script for Deep Lake Vector Service
+# Quick Setup Script for Tributary AI services for DeepLake
 # This script sets up the environment with secure credentials
 
-echo "🚀 Deep Lake Vector Service - Quick Setup"
+echo "🚀 Tributary AI services for DeepLake - Quick Setup"
 echo "========================================="
 
 # Check if JWT_SECRET_KEY is already set

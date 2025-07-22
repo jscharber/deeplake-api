@@ -1,9 +1,9 @@
 #!/bin/bash
 
-# Deep Lake Vector Service - Local Development Runner
+# Tributary AI services for DeepLake - Local Development Runner
 # ==================================================
 
-echo "🚀 Setting up Deep Lake Vector Service for local development..."
+echo "🚀 Setting up Tributary AI services for DeepLake for local development..."
 
 # Colors for output
 RED='\033[0;31m'
@@ -105,7 +105,7 @@ else
 fi
 
 echo ""
-echo "🚀 Starting Deep Lake Vector Service..."
+echo "🚀 Starting Tributary AI services for DeepLake..."
 echo "   URL: http://localhost:8000"
 echo "   Docs: http://localhost:8000/docs"
 echo "   Health: http://localhost:8000/api/v1/health"

@@ -155,6 +155,13 @@ class TestEndToEnd:
     def test_authentication_flows(self, client: TestClient, auth_service):
         """Test different authentication methods."""
         
+        # Create test tenant
+        auth_service.create_tenant(
+            tenant_id="test-tenant",
+            name="Test Tenant",
+            permissions=["read", "write", "admin"]
+        )
+        
         # Test API key authentication
         api_key = auth_service.generate_api_key(
             tenant_id="test-tenant",
@@ -193,6 +200,19 @@ class TestEndToEnd:
     
     def test_tenant_isolation(self, client: TestClient, auth_service):
         """Test that tenants are properly isolated."""
+        
+        # Create tenants
+        auth_service.create_tenant(
+            tenant_id="tenant1",
+            name="Tenant 1",
+            permissions=["read", "write", "admin"]
+        )
+        
+        auth_service.create_tenant(
+            tenant_id="tenant2",
+            name="Tenant 2",
+            permissions=["read", "write", "admin"]
+        )
         
         # Create API keys for different tenants
         tenant1_key = auth_service.generate_api_key(

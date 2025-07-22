@@ -1,7 +1,7 @@
 """
-Python client example for Deep Lake Vector Service.
+Python client example for Tributary AI services for DeepLake.
 
-This example demonstrates how to use the Deep Lake Vector Service
+This example demonstrates how to use Tributary AI services for DeepLake
 HTTP API with Python using the requests library.
 """
 
@@ -13,7 +13,7 @@ import time
 
 
 class DeepLakeClient:
-    """Python client for Deep Lake Vector Service."""
+    """Python client for Tributary AI services for DeepLake."""
     
     def __init__(
         self,
@@ -195,7 +195,7 @@ class DeepLakeClient:
 
 # Example usage
 async def main():
-    """Example usage of the Deep Lake client."""
+    """Example usage of the Tributary AI services for DeepLake client."""
     
     # Initialize client with API key from environment variable
     import os
@@ -210,7 +210,7 @@ async def main():
         api_key=api_key
     ) as client:
         
-        print("🚀 Deep Lake Vector Service Python Client Example")
+        print("🚀 Tributary AI services for DeepLake Python Client Example")
         print("=" * 50)
         
         # 1. Check service health
@@ -317,7 +317,7 @@ async def main():
 
 # Synchronous client example
 class SyncDeepLakeClient:
-    """Synchronous version of the Deep Lake client using requests."""
+    """Synchronous version of the Tributary AI services for DeepLake client using requests."""
     
     def __init__(
         self,

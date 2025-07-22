@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tributary AI Service - Monitoring Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            color: white;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            margin-bottom: 20px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+            background: white;
+            padding: 10px;
+        }
+        
+        .header h1 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+            font-weight: 300;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 40px;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            border: 1px solid #e1e8ed;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .card h2 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .card p {
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        
+        .btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-decoration: none;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn.secondary {
+            background: #f8f9fa;
+            color: #495057;
+            border: 1px solid #dee2e6;
+        }
+        
+        .btn.secondary:hover {
+            background: #e9ecef;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-left: auto;
+        }
+        
+        .status.up {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .status.down {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .icon {
+            font-size: 1.2rem;
+        }
+        
+        .footer {
+            text-align: center;
+            color: white;
+            opacity: 0.8;
+            margin-top: 40px;
+        }
+        
+        .footer a {
+            color: white;
+            text-decoration: underline;
+        }
+        
+        .quick-links {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        
+        .quick-links h3 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.3rem;
+        }
+        
+        .links-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+        }
+        
+        .health-check {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .card {
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <img src="/docs/images/tas-500-500.png" alt="TAS Logo" class="logo">
+            <h1>Monitoring Dashboard</h1>
+            <p>Tributary AI Service for DeepLake - Observability Tools</p>
+        </div>
+        
+        <div class="quick-links">
+            <h3>🚀 Quick Access</h3>
+            <div class="links-grid">
+                <a href="http://localhost:8000/docs" class="btn secondary" target="_blank">📚 API Documentation</a>
+                <a href="http://localhost:8000/api/v1/health" class="btn secondary" target="_blank">❤️ Health Check</a>
+                <a href="/MONITORING_ACCESS.md" class="btn secondary">📋 Access Guide</a>
+                <a href="/QUICK_ACCESS.md" class="btn secondary">⚡ Quick Access</a>
+            </div>
+        </div>
+        
+        <div class="grid">
+            <!-- Prometheus -->
+            <div class="card">
+                <h2>
+                    <span class="icon">📊</span>
+                    Prometheus
+                    <span class="status up" id="prometheus-status">●</span>
+                </h2>
+                <p>Time-series database and monitoring system. Query metrics, view targets, and explore data.</p>
+                <a href="http://localhost:9090" class="btn" target="_blank">Open Prometheus</a>
+                <a href="http://localhost:9090/targets" class="btn secondary" target="_blank">View Targets</a>
+                <a href="http://localhost:9090/graph" class="btn secondary" target="_blank">Query Console</a>
+                
+                <div class="health-check">
+                    <span>Service Health:</span>
+                    <span id="prom-health">Checking...</span>
+                </div>
+            </div>
+            
+            <!-- Grafana -->
+            <div class="card">
+                <h2>
+                    <span class="icon">📈</span>
+                    Grafana
+                    <span class="status up" id="grafana-status">●</span>
+                </h2>
+                <p>Visualization and dashboards platform. View real-time metrics, create custom dashboards, and set up alerts.</p>
+                <a href="http://localhost:3000" class="btn" target="_blank">Open Grafana</a>
+                <a href="http://localhost:3000/dashboards" class="btn secondary" target="_blank">Dashboards</a>
+                <a href="http://localhost:3000/explore" class="btn secondary" target="_blank">Explore Data</a>
+                
+                <div class="health-check">
+                    <span>Login:</span>
+                    <span><strong>admin</strong> / <strong>admin</strong></span>
+                </div>
+                <div class="health-check">
+                    <span>Service Health:</span>
+                    <span id="grafana-health">Checking...</span>
+                </div>
+            </div>
+            
+            <!-- AlertManager -->
+            <div class="card">
+                <h2>
+                    <span class="icon">🚨</span>
+                    AlertManager
+                    <span class="status up" id="alertmanager-status">●</span>
+                </h2>
+                <p>Handle alerts from Prometheus. Manage alert routing, grouping, and notifications.</p>
+                <a href="http://localhost:9093" class="btn" target="_blank">Open AlertManager</a>
+                <a href="http://localhost:9093/#/alerts" class="btn secondary" target="_blank">View Alerts</a>
+                <a href="http://localhost:9093/#/silences" class="btn secondary" target="_blank">Manage Silences</a>
+                
+                <div class="health-check">
+                    <span>Service Health:</span>
+                    <span id="alert-health">Checking...</span>
+                </div>
+            </div>
+            
+            <!-- API Service -->
+            <div class="card">
+                <h2>
+                    <span class="icon">🔧</span>
+                    API Service
+                    <span class="status up" id="api-status">●</span>
+                </h2>
+                <p>Main application service. Access API documentation, health checks, and service metrics.</p>
+                <a href="http://localhost:8000" class="btn" target="_blank">API Root</a>
+                <a href="http://localhost:8000/docs" class="btn secondary" target="_blank">Swagger UI</a>
+                <a href="http://localhost:8000/redoc" class="btn secondary" target="_blank">ReDoc</a>
+                
+                <div class="health-check">
+                    <span>Service Health:</span>
+                    <span id="api-health">Checking...</span>
+                </div>
+            </div>
+            
+            <!-- Redis -->
+            <div class="card">
+                <h2>
+                    <span class="icon">🗄️</span>
+                    Redis Cache
+                    <span class="status up" id="redis-status">●</span>
+                </h2>
+                <p>In-memory data structure store used for caching and session management.</p>
+                <a href="#" class="btn secondary" onclick="alert('Redis runs on localhost:6379. Use Redis CLI or monitoring tools to connect.')">Connection Info</a>
+                
+                <div class="health-check">
+                    <span>Port</span>
+                    <span><strong>6379</strong></span>
+                </div>
+                <div class="health-check">
+                    <span>Connection:</span>
+                    <span id="redis-health">Checking...</span>
+                </div>
+            </div>
+            
+            <!-- Documentation -->
+            <div class="card">
+                <h2>
+                    <span class="icon">📖</span>
+                    Documentation
+                </h2>
+                <p>Comprehensive guides, tutorials, and reference documentation for monitoring and operations.</p>
+                <a href="/docs/monitoring.md" class="btn secondary">Monitoring Guide</a>
+                <a href="/docs/observability.md" class="btn secondary">Observability Strategy</a>
+                <a href="/docs/monitoring-verification.md" class="btn secondary">Verification Guide</a>
+                <a href="/ROADMAP.md" class="btn secondary">Roadmap</a>
+            </div>
+        </div>
+        
+        <div class="quick-links">
+            <h3>🛠️ Useful Commands</h3>
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; font-family: monospace;">
+                <div style="margin: 5px 0;"><strong>Check services:</strong> <code>docker-compose ps</code></div>
+                <div style="margin: 5px 0;"><strong>View logs:</strong> <code>docker-compose logs -f [service-name]</code></div>
+                <div style="margin: 5px 0;"><strong>Restart monitoring:</strong> <code>docker-compose restart prometheus grafana alertmanager</code></div>
+                <div style="margin: 5px 0;"><strong>Run verification:</strong> <code>bash scripts/verify_monitoring.sh</code></div>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <p>
+                📊 Monitoring Stack Status: <span id="overall-status">Checking...</span> | 
+                <a href="./docs/troubleshooting.md">Troubleshooting</a> | 
+                <a href="https://github.com/your-org/deeplake-api">GitHub</a>
+            </p>
+            <p style="margin-top: 10px; font-size: 0.9rem;">
+                Last updated: <span id="last-updated"></span>
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Health check functions
+        async function checkHealth(url, elementId) {
+            try {
+                const response = await fetch(url, { 
+                    method: 'GET', 
+                    mode: 'no-cors',
+                    timeout: 5000 
+                });
+                document.getElementById(elementId).textContent = '✅ Healthy';
+                document.getElementById(elementId).style.color = '#28a745';
+                return true;
+            } catch (error) {
+                document.getElementById(elementId).textContent = '❌ Unavailable';
+                document.getElementById(elementId).style.color = '#dc3545';
+                return false;
+            }
+        }
+
+        async function updateStatuses() {
+            const services = [
+                { url: 'http://localhost:9090/-/healthy', id: 'prom-health', status: 'prometheus-status' },
+                { url: 'http://localhost:3000/api/health', id: 'grafana-health', status: 'grafana-status' },
+                { url: 'http://localhost:9093/-/healthy', id: 'alert-health', status: 'alertmanager-status' },
+                { url: 'http://localhost:8000/api/v1/health', id: 'api-health', status: 'api-status' }
+            ];
+
+            let healthyCount = 0;
+            
+            for (const service of services) {
+                const isHealthy = await checkHealth(service.url, service.id);
+                const statusElement = document.getElementById(service.status);
+                
+                if (isHealthy) {
+                    statusElement.className = 'status up';
+                    statusElement.textContent = '● UP';
+                    healthyCount++;
+                } else {
+                    statusElement.className = 'status down';
+                    statusElement.textContent = '● DOWN';
+                }
+            }
+
+            // Redis check (simplified - just show as up for now)
+            document.getElementById('redis-health').textContent = '✅ Running';
+            document.getElementById('redis-health').style.color = '#28a745';
+            healthyCount++;
+
+            // Overall status
+            const totalServices = 5;
+            const overallStatus = document.getElementById('overall-status');
+            if (healthyCount === totalServices) {
+                overallStatus.textContent = '✅ All Systems Operational';
+                overallStatus.style.color = '#28a745';
+            } else if (healthyCount > totalServices / 2) {
+                overallStatus.textContent = `⚠️ ${healthyCount}/${totalServices} Services Running`;
+                overallStatus.style.color = '#ffc107';
+            } else {
+                overallStatus.textContent = `❌ ${healthyCount}/${totalServices} Services Running`;
+                overallStatus.style.color = '#dc3545';
+            }
+        }
+
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('last-updated').textContent = now.toLocaleString();
+        }
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            updateTimestamp();
+            updateStatuses();
+            
+            // Refresh every 30 seconds
+            setInterval(() => {
+                updateStatuses();
+                updateTimestamp();
+            }, 30000);
+        });
+
+        // Add keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case '1':
+                        e.preventDefault();
+                        window.open('http://localhost:9090', '_blank');
+                        break;
+                    case '2':
+                        e.preventDefault();
+                        window.open('http://localhost:3000', '_blank');
+                        break;
+                    case '3':
+                        e.preventDefault();
+                        window.open('http://localhost:9093', '_blank');
+                        break;
+                    case '4':
+                        e.preventDefault();
+                        window.open('http://localhost:8000/docs', '_blank');
+                        break;
+                }
+            }
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,201 @@
+groups:
+  - name: deeplake-api.rules
+    rules:
+      # Service Health Alerts
+      - alert: DeepLakeAPIDown
+        expr: up{job="deeplake-service"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: "DeepLake API service is down"
+          description: "DeepLake API service has been down for more than 1 minute"
+
+      - alert: HighErrorRate
+        expr: (sum(rate(deeplake_errors_total[5m])) / sum(rate(deeplake_http_requests_total[5m]))) * 100 > 5
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate detected"
+          description: "Error rate is {{ $value }}% which is above 5% threshold"
+
+      - alert: VeryHighErrorRate
+        expr: (sum(rate(deeplake_errors_total[5m])) / sum(rate(deeplake_http_requests_total[5m]))) * 100 > 10
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high error rate detected"
+          description: "Error rate is {{ $value }}% which is above 10% threshold"
+
+      # Performance Alerts
+      - alert: HighLatency
+        expr: histogram_quantile(0.95, rate(deeplake_http_request_duration_seconds_bucket[5m])) > 2.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High response latency"
+          description: "95th percentile latency is {{ $value }}s which is above 2s threshold"
+
+      - alert: VeryHighLatency
+        expr: histogram_quantile(0.95, rate(deeplake_http_request_duration_seconds_bucket[5m])) > 5.0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high response latency"
+          description: "95th percentile latency is {{ $value }}s which is above 5s threshold"
+
+      # Cache Performance Alerts
+      - alert: LowCacheHitRate
+        expr: deeplake_cache_hit_ratio < 0.5
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} which is below 50%"
+
+      - alert: VeryLowCacheHitRate
+        expr: deeplake_cache_hit_ratio < 0.2
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very low cache hit rate"
+          description: "Cache hit rate is {{ $value | humanizePercentage }} which is below 20%"
+
+      # Storage Alerts
+      - alert: HighStorageGrowth
+        expr: increase(deeplake_storage_size_bytes[1h]) > 1073741824  # 1GB per hour
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "High storage growth rate"
+          description: "Storage grew by {{ $value }} bytes in the last hour"
+
+      - alert: VeryHighStorageGrowth
+        expr: increase(deeplake_storage_size_bytes[1h]) > 5368709120  # 5GB per hour
+        for: 30m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high storage growth rate"
+          description: "Storage grew by {{ $value }} bytes in the last hour"
+
+      # Memory Usage Alerts
+      - alert: HighMemoryUsage
+        expr: deeplake_memory_usage_bytes > 2147483648  # 2GB
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High memory usage"
+          description: "Memory usage is {{ $value }} bytes which is above 2GB"
+
+      - alert: VeryHighMemoryUsage
+        expr: deeplake_memory_usage_bytes > 4294967296  # 4GB
+        for: 5m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very high memory usage"
+          description: "Memory usage is {{ $value }} bytes which is above 4GB"
+
+      # Search Performance Alerts
+      - alert: SlowSearchQueries
+        expr: histogram_quantile(0.95, rate(deeplake_search_query_duration_seconds_bucket[5m])) > 10.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow search queries detected"
+          description: "95th percentile search query duration is {{ $value }}s which is above 10s"
+
+      - alert: VerySlowSearchQueries
+        expr: histogram_quantile(0.95, rate(deeplake_search_query_duration_seconds_bucket[5m])) > 30.0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Very slow search queries detected"
+          description: "95th percentile search query duration is {{ $value }}s which is above 30s"
+
+      # Vector Operations Alerts
+      - alert: SlowVectorInsertion
+        expr: histogram_quantile(0.95, rate(deeplake_vector_insertion_duration_seconds_bucket[5m])) > 5.0
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "Slow vector insertion detected"
+          description: "95th percentile vector insertion duration is {{ $value }}s which is above 5s"
+
+      - alert: NoVectorInsertion
+        expr: rate(deeplake_vectors_inserted_total[1h]) == 0
+        for: 2h
+        labels:
+          severity: warning
+        annotations:
+          summary: "No vector insertion activity"
+          description: "No vectors have been inserted in the last hour"
+
+      # Tenant-specific Alerts
+      - alert: HighTenantErrorRate
+        expr: (sum(rate(deeplake_errors_total[5m])) by (tenant_id) / sum(rate(deeplake_http_requests_total[5m])) by (tenant_id)) * 100 > 10
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High error rate for tenant {{ $labels.tenant_id }}"
+          description: "Error rate for tenant {{ $labels.tenant_id }} is {{ $value }}% which is above 10%"
+
+      - alert: HighTenantLatency
+        expr: histogram_quantile(0.95, rate(deeplake_http_request_duration_seconds_bucket[5m])) > 3.0
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High latency for tenant {{ $labels.tenant_id }}"
+          description: "95th percentile latency for tenant {{ $labels.tenant_id }} is {{ $value }}s"
+
+      # Dataset Alerts
+      - alert: LargeDatasetSize
+        expr: deeplake_storage_size_bytes > 10737418240  # 10GB per dataset
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Large dataset detected"
+          description: "Dataset {{ $labels.dataset_id }} size is {{ $value }} bytes which is above 10GB"
+
+      - alert: TooManyVectors
+        expr: deeplake_vectors_total > 10000000  # 10M vectors per dataset
+        for: 1h
+        labels:
+          severity: warning
+        annotations:
+          summary: "Dataset has too many vectors"
+          description: "Dataset {{ $labels.dataset_id }} has {{ $value }} vectors which is above 10M threshold"
+
+      # Redis Cache Alerts
+      - alert: RedisCacheDown
+        expr: up{job="redis"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Redis cache is down"
+          description: "Redis cache service has been down for more than 2 minutes"
+
+      - alert: HighCacheOperationFailures
+        expr: rate(deeplake_cache_operations_total{status="error"}[5m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "High cache operation failure rate"
+          description: "Cache operation failure rate is {{ $value }} operations/second"

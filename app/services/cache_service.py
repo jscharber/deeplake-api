@@ -20,7 +20,7 @@ class CacheService(LoggingMixin):
     def __init__(self) -> None:
         super().__init__()
         self.redis_url = settings.redis.url
-        self.ttl_seconds = settings.redis.ttl_seconds
+        self.ttl_seconds = settings.redis.default_ttl_seconds
         self.redis_client: Optional[redis.Redis] = None
         self.enabled = True
         
@@ -184,7 +184,7 @@ class CacheManager:
     async def cache_dataset_info(self, dataset_id: str, dataset_info: Dict[str, Any], tenant_id: Optional[str] = None) -> bool:
         """Cache dataset information."""
         key = self.cache.get_cache_key("dataset_info", dataset_id, tenant_id=tenant_id)
-        return await self.cache.set(key, dataset_info, ttl=3600)  # 1 hour
+        return await self.cache.set(key, dataset_info, ttl=settings.redis.dataset_cache_ttl)
     
     async def get_search_results(self, dataset_id: str, query_hash: str, options_hash: str, tenant_id: Optional[str] = None) -> Optional[List[Dict[str, Any]]]:
         """Get cached search results."""
@@ -194,7 +194,7 @@ class CacheManager:
     async def cache_search_results(self, dataset_id: str, query_hash: str, options_hash: str, results: List[Dict[str, Any]], tenant_id: Optional[str] = None) -> bool:
         """Cache search results."""
         key = self.cache.get_cache_key("search_results", dataset_id, query_hash, options_hash, tenant_id=tenant_id)
-        return await self.cache.set(key, results, ttl=300)  # 5 minutes
+        return await self.cache.set(key, results, ttl=settings.redis.search_cache_ttl)
     
     async def invalidate_dataset_cache(self, dataset_id: str, tenant_id: Optional[str] = None) -> None:
         """Invalidate all cache entries for a dataset."""
@@ -216,7 +216,7 @@ class CacheManager:
     async def cache_vector_info(self, dataset_id: str, vector_id: str, vector_info: Dict[str, Any], tenant_id: Optional[str] = None) -> bool:
         """Cache vector information."""
         key = self.cache.get_cache_key("vector_info", dataset_id, vector_id, tenant_id=tenant_id)
-        return await self.cache.set(key, vector_info, ttl=1800)  # 30 minutes
+        return await self.cache.set(key, vector_info, ttl=settings.redis.metadata_cache_ttl)
     
     async def invalidate_vector_cache(self, dataset_id: str, vector_id: str, tenant_id: Optional[str] = None) -> None:
         """Invalidate cached vector information."""

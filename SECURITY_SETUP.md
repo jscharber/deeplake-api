@@ -2,7 +2,7 @@
 
 ## Overview
 
-This guide explains how to set up the Deep Lake Vector Service with secure configuration after the removal of hardcoded credentials.
+This guide explains how to set up Tributary AI services for DeepLake with secure configuration after the removal of hardcoded credentials.
 
 ## Required Environment Variables
 

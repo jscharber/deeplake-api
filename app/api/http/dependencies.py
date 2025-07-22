@@ -8,6 +8,9 @@ from app.services.deeplake_service import DeepLakeService
 from app.services.auth_service import AuthService
 from app.services.cache_service import CacheService, CacheManager
 from app.services.metrics_service import MetricsService
+from app.services.embedding_service import EmbeddingService, get_embedding_service
+from app.services.rate_limit_service import RateLimitService
+from app.services.backup_service import BackupService
 from app.models.exceptions import AuthenticationException, AuthorizationException
 
 
@@ -17,6 +20,8 @@ _auth_service: Optional[AuthService] = None
 _cache_service: Optional[CacheService] = None
 _cache_manager: Optional[CacheManager] = None
 _metrics_service: Optional[MetricsService] = None
+_rate_limit_service: Optional[RateLimitService] = None
+_backup_service: Optional[BackupService] = None
 
 api_key_header = APIKeyHeader(name="Authorization", auto_error=False)
 
@@ -25,15 +30,19 @@ def init_dependencies(
     deeplake_service: DeepLakeService,
     auth_service: AuthService,
     cache_service: CacheService,
-    metrics_service: MetricsService
+    metrics_service: MetricsService,
+    rate_limit_service: RateLimitService,
+    backup_service: BackupService
 ) -> None:
     """Initialize global service dependencies."""
-    global _deeplake_service, _auth_service, _cache_service, _cache_manager, _metrics_service
+    global _deeplake_service, _auth_service, _cache_service, _cache_manager, _metrics_service, _rate_limit_service, _backup_service
     _deeplake_service = deeplake_service
     _auth_service = auth_service
     _cache_service = cache_service
     _cache_manager = CacheManager(cache_service)
     _metrics_service = metrics_service
+    _rate_limit_service = rate_limit_service
+    _backup_service = backup_service
 
 
 def get_deeplake_service() -> DeepLakeService:
@@ -76,6 +85,26 @@ def get_metrics_service() -> MetricsService:
     return _metrics_service
 
 
+def get_rate_limit_service() -> RateLimitService:
+    """Get rate limit service dependency."""
+    if _rate_limit_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Rate limit service not available"
+        )
+    return _rate_limit_service
+
+
+def get_backup_service() -> BackupService:
+    """Get backup service dependency."""
+    if _backup_service is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Backup service not available"
+        )
+    return _backup_service
+
+
 async def get_current_auth(
     request: Request,
     api_key: Optional[str] = Depends(api_key_header),
@@ -88,8 +117,11 @@ async def get_current_auth(
         
         # Check for API key from OpenAPI ApiKeyAuth
         if api_key:
+            # If it already has Bearer prefix (JWT token), use as is
+            if api_key.startswith("Bearer "):
+                auth_header = api_key
             # If it already has ApiKey prefix, use as is
-            if api_key.startswith("ApiKey "):
+            elif api_key.startswith("ApiKey "):
                 auth_header = api_key
             else:
                 # Add ApiKey prefix for raw API key
@@ -122,10 +154,15 @@ async def get_current_auth(
             detail=str(e),
             headers={"WWW-Authenticate": "ApiKey"}
         )
+    except HTTPException:
+        # Re-raise HTTP exceptions (like 503 for service unavailable)
+        raise
     except Exception as e:
+        # For any other exception, treat as authentication failure
         raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Authentication service error"
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Authentication failed",
+            headers={"WWW-Authenticate": "ApiKey"}
         )
 
 
@@ -229,6 +266,23 @@ async def validate_dataset_access(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=f"Dataset '{dataset_id}' not found or access denied"
+        )
+
+
+def get_embedding_service_dep() -> EmbeddingService:
+    """Get embedding service dependency."""
+    try:
+        return get_embedding_service()
+    except RuntimeError as e:
+        # Return 500 error with clear message when embedding service is not available
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=str(e)
+        )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Embedding service not available: {e}"
         )
 
 

@@ -13,7 +13,7 @@ class TestHealthEndpoints:
         assert response.status_code == 200
         
         data = response.json()
-        assert data["service"] == "Deep Lake Vector Service"
+        assert data["service"] == "Tributary AI services for DeepLake"
         assert data["version"] == "1.0.0"
         assert "dependencies" in data
     
@@ -231,7 +231,7 @@ class TestSearchEndpoints:
             json=text_search_data,
             headers=auth_headers
         )
-        assert response.status_code == 501  # Not implemented
+        assert response.status_code == 400  # Bad request due to missing sentence-transformers
 
 
 class TestAuthenticationAndAuthorization:

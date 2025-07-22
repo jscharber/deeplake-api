@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### 🔒 Security Hardening Release
 
-This release addresses critical security vulnerabilities and improves the overall security posture of the Deep Lake Vector Service.
+This release addresses critical security vulnerabilities and improves the overall security posture of Tributary AI services for DeepLake.
 
 ### 🚨 **BREAKING CHANGES**
 
@@ -212,7 +212,7 @@ The security foundation is now solid. Next release will focus on:
 - **Dependencies**: Redis instance for caching (optional but recommended)
 
 ### Migration Notes
-- This is the initial release of the Deep Lake Vector Service
+- This is the initial release of Tributary AI services for DeepLake
 - No migration required for new installations
 - Configuration is managed through environment variables
 - Default development settings are provided for quick setup

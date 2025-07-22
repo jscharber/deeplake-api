@@ -43,6 +43,7 @@ dependencies = [
     "click>=8.1.0",
     "pydantic-settings>=2.0.0",
     "passlib[bcrypt]>=1.7.4",
+    "aiofiles>=24.1.0",
 ]
 
 [project.optional-dependencies]
@@ -64,6 +65,7 @@ test = [
     "pytest-mock>=3.12.0",
     "httpx>=0.25.0",
     "grpcio-testing>=1.60.0",
+    "requests>=2.31.0",
 ]
 
 [project.scripts]
@@ -169,6 +171,7 @@ markers = [
     "integration: marks tests as integration tests", 
     "unit: marks tests as unit tests",
     "asyncio: marks tests as asyncio",
+    "monitoring: marks tests as monitoring/alerting tests (requires monitoring stack)",
 ]
 asyncio_mode = "auto"
 

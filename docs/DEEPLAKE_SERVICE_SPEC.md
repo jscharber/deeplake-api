@@ -1,17 +1,17 @@
-# Deep Lake Vector Service - Complete Implementation Specification
+# Tributary AI services for DeepLake - Complete Implementation Specification
 
 ## Executive Summary
 
-This document provides a complete specification for creating a standalone Deep Lake Vector Service repository. The service will replace the mock Deep Lake implementation currently in the eAIIngest project with a production-ready Python service that provides both HTTP REST and gRPC APIs.
+This document provides a complete specification for creating a standalone Tributary AI services for DeepLake repository. The service will replace the mock Tributary AI implementation currently in the eAIIngest project with a production-ready Python service that provides both HTTP REST and gRPC APIs.
 
 ## Background & Context
 
 ### Current Problem
-The eAIIngest project currently contains a mock Deep Lake implementation in Go (`pkg/embeddings/vectorstore/deeplake.go`) that simulates Deep Lake functionality using in-memory maps. This won't work in production since Deep Lake is a Python-only library with no Go bindings.
+The eAIIngest project currently contains a mock Tributary AI implementation in Go (`pkg/embeddings/vectorstore/deeplake.go`) that simulates DeepLake functionality using in-memory maps. This won't work in production since DeepLake is a Python-only library with no Go bindings.
 
 ### Solution
 Create a standalone Python service that:
-- Provides real Deep Lake integration
+- Provides real DeepLake integration
 - Supports both HTTP REST and gRPC protocols
 - Can be reused by any project or language
 - Integrates seamlessly with the existing eAIIngest architecture
@@ -512,7 +512,7 @@ async def lifespan(app: FastAPI):
 
 # FastAPI app
 app = FastAPI(
-    title="Deep Lake Vector Service",
+    title="Tributary AI services for DeepLake",
     description="Universal Deep Lake vector database service with HTTP and gRPC APIs",
     version="1.0.0",
     lifespan=lifespan
@@ -1379,7 +1379,7 @@ func main() {
 
 ## Conclusion
 
-This specification provides a complete blueprint for implementing a production-ready Deep Lake Vector Service. The service will be:
+This specification provides a complete blueprint for implementing a production-ready Tributary AI services for DeepLake. The service will be:
 
 - **Universal**: Works with any programming language
 - **Scalable**: Handles production workloads

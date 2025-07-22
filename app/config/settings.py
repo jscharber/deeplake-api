@@ -24,6 +24,8 @@ class DeepLakeConfig(BaseSettings):
     
     class Config:
         env_prefix = "DEEPLAKE_"
+        env_file = ".env"
+        extra = "ignore"
 
 
 class HTTPConfig(BaseSettings):
@@ -59,18 +61,36 @@ class AuthConfig(BaseSettings):
     jwt_expiration_hours: int = Field(default=8760, description="JWT expiration in hours (default: 1 year)")
     
     class Config:
-        # Remove env_prefix to allow direct JWT_SECRET_KEY mapping
-        pass
+        # No env_prefix to allow direct JWT_SECRET_KEY mapping
+        env_file = ".env"
+        extra = "ignore"
 
 
 class RedisConfig(BaseSettings):
     """Redis configuration for caching."""
     
     url: str = Field(default="redis://localhost:6379/0", description="Redis URL")
-    ttl_seconds: int = Field(default=3600, description="Cache TTL in seconds")
+    
+    # TTL configurations for different cache types
+    default_ttl_seconds: int = Field(default=3600, description="Default cache TTL in seconds")
+    search_cache_ttl: int = Field(default=300, description="Search results cache TTL in seconds")
+    metadata_cache_ttl: int = Field(default=1800, description="Metadata cache TTL in seconds")
+    dataset_cache_ttl: int = Field(default=900, description="Dataset info cache TTL in seconds")
+    embedding_cache_ttl: int = Field(default=3600, description="Embedding cache TTL in seconds")
+    
+    # Connection configuration
+    max_connections: int = Field(default=20, description="Maximum Redis connections")
+    connection_timeout: int = Field(default=5, description="Redis connection timeout in seconds")
+    retry_attempts: int = Field(default=3, description="Number of retry attempts for Redis operations")
+    
+    # Memory optimization
+    compress_cache: bool = Field(default=True, description="Enable cache compression")
+    max_cache_size_mb: int = Field(default=512, description="Maximum cache size in MB")
     
     class Config:
         env_prefix = "REDIS_"
+        env_file = ".env"
+        extra = "ignore"
 
 
 class MonitoringConfig(BaseSettings):
@@ -83,6 +103,8 @@ class MonitoringConfig(BaseSettings):
     
     class Config:
         env_prefix = "MONITORING_"
+        env_file = ".env"
+        extra = "ignore"
 
 
 class RateLimitConfig(BaseSettings):
@@ -114,6 +136,78 @@ class PerformanceConfig(BaseSettings):
         description="Maximum concurrent search operations"
     )
     
+    # Thread pool configuration
+    deeplake_thread_pool_workers: int = Field(
+        default=10,
+        description="Number of workers in DeepLake thread pool"
+    )
+    
+    # HTTP request timeouts
+    http_request_timeout: int = Field(
+        default=300,
+        description="HTTP request timeout in seconds"
+    )
+    http_keep_alive_timeout: int = Field(
+        default=5,
+        description="HTTP keep-alive timeout in seconds"
+    )
+    
+    # Search performance
+    vector_search_timeout: int = Field(
+        default=30,
+        description="Vector search operation timeout in seconds"
+    )
+    text_search_timeout: int = Field(
+        default=15,
+        description="Text search operation timeout in seconds"
+    )
+    hybrid_search_timeout: int = Field(
+        default=45,
+        description="Hybrid search operation timeout in seconds"
+    )
+    
+    # Import/export performance
+    import_batch_size: int = Field(
+        default=100,
+        description="Default batch size for import operations"
+    )
+    export_batch_size: int = Field(
+        default=100,
+        description="Default batch size for export operations"
+    )
+    import_timeout: int = Field(
+        default=3600,
+        description="Import operation timeout in seconds"
+    )
+    export_timeout: int = Field(
+        default=1800,
+        description="Export operation timeout in seconds"
+    )
+    
+    # Database connection timeouts
+    database_connection_timeout: int = Field(
+        default=30,
+        description="Database connection timeout in seconds"
+    )
+    database_query_timeout: int = Field(
+        default=60,
+        description="Database query timeout in seconds"
+    )
+    
+    # Pagination and limits
+    default_page_size: int = Field(
+        default=100,
+        description="Default page size for paginated results"
+    )
+    max_page_size: int = Field(
+        default=1000,
+        description="Maximum page size for paginated results"
+    )
+    max_search_results: int = Field(
+        default=10000,
+        description="Maximum number of search results"
+    )
+    
     class Config:
         env_prefix = "PERFORMANCE_"
 
@@ -134,6 +228,27 @@ class DevelopmentConfig(BaseSettings):
     
     class Config:
         env_prefix = "DEV_"
+        env_file = ".env"
+        extra = "ignore"
+
+
+class EmbeddingConfig(BaseSettings):
+    """Embedding service configuration."""
+    
+    # OpenAI configuration
+    openai_api_key: Optional[str] = Field(default=None, description="OpenAI API key for embeddings")
+    openai_model: str = Field(default="text-embedding-3-small", description="OpenAI embedding model")
+    
+    # Sentence Transformers configuration
+    sentence_transformers_model: str = Field(default="all-MiniLM-L6-v2", description="Sentence Transformers model name")
+    
+    # General embedding settings
+    embedding_cache_ttl: int = Field(default=3600, description="Embedding cache TTL in seconds")
+    max_text_length: int = Field(default=10000, description="Maximum text length for embedding")
+    batch_size: int = Field(default=32, description="Batch size for embedding multiple texts")
+    
+    class Config:
+        env_prefix = "EMBEDDING_"
 
 
 class Settings(BaseSettings):
@@ -152,6 +267,7 @@ class Settings(BaseSettings):
     rate_limit: RateLimitConfig = Field(default_factory=RateLimitConfig)
     performance: PerformanceConfig = Field(default_factory=PerformanceConfig)
     development: DevelopmentConfig = Field(default_factory=DevelopmentConfig)
+    embedding: EmbeddingConfig = Field(default_factory=EmbeddingConfig)
     
     class Config:
         env_file = ".env"

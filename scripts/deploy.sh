@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Deployment script for Deep Lake Vector Service
+# Deployment script for Tributary AI services for DeepLake
 
 set -e
 
@@ -55,7 +55,7 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-echo "Deploying Deep Lake Vector Service..."
+echo "Deploying Tributary AI services for DeepLake..."
 echo "Environment: $ENVIRONMENT"
 echo "Project root: $PROJECT_ROOT"
 

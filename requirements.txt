@@ -16,3 +16,11 @@ tenacity>=8.2.0
 structlog>=23.2.0
 click>=8.1.0
 passlib[bcrypt]>=1.7.4
+
+# Embedding services
+openai>=1.0.0
+sentence-transformers>=2.2.0
+
+# Cloud storage for backups
+boto3>=1.34.0
+botocore>=1.34.0

@@ -192,6 +192,76 @@ class MetricsService(LoggingMixin):
             registry=self.registry
         )
         
+        # Import/Export metrics
+        self.import_jobs_total = Counter(
+            'deeplake_import_jobs_total',
+            'Total import jobs',
+            ['dataset_id', 'format', 'status', 'tenant_id'],
+            registry=self.registry
+        )
+        
+        self.export_jobs_total = Counter(
+            'deeplake_export_jobs_total',
+            'Total export jobs',
+            ['dataset_id', 'format', 'status', 'tenant_id'],
+            registry=self.registry
+        )
+        
+        self.import_duration = Histogram(
+            'deeplake_import_duration_seconds',
+            'Import job duration in seconds',
+            ['dataset_id', 'format', 'tenant_id'],
+            buckets=[1, 5, 10, 30, 60, 300, 600, 1800, 3600],
+            registry=self.registry
+        )
+        
+        self.export_duration = Histogram(
+            'deeplake_export_duration_seconds',
+            'Export job duration in seconds',
+            ['dataset_id', 'format', 'tenant_id'],
+            buckets=[1, 5, 10, 30, 60, 300, 600, 1800, 3600],
+            registry=self.registry
+        )
+        
+        self.import_rows_processed = Histogram(
+            'deeplake_import_rows_processed',
+            'Number of rows processed in import jobs',
+            ['dataset_id', 'format', 'tenant_id'],
+            buckets=[100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000],
+            registry=self.registry
+        )
+        
+        self.export_vectors_exported = Histogram(
+            'deeplake_export_vectors_exported',
+            'Number of vectors exported in export jobs',
+            ['dataset_id', 'format', 'tenant_id'],
+            buckets=[100, 500, 1000, 5000, 10000, 50000, 100000, 500000, 1000000],
+            registry=self.registry
+        )
+
+        # Index metrics
+        self.index_operations_total = Counter(
+            'deeplake_index_operations_total',
+            'Total index operations',
+            ['dataset_id', 'operation', 'status', 'tenant_id'],
+            registry=self.registry
+        )
+        
+        self.index_build_duration = Histogram(
+            'deeplake_index_build_duration_seconds',
+            'Index build duration in seconds',
+            ['dataset_id', 'index_type', 'tenant_id'],
+            buckets=[0.1, 0.5, 1, 5, 10, 30, 60, 300, 600],
+            registry=self.registry
+        )
+        
+        self.index_size_bytes = Gauge(
+            'deeplake_index_size_bytes',
+            'Index size in bytes',
+            ['dataset_id', 'index_type', 'tenant_id'],
+            registry=self.registry
+        )
+
         # Performance metrics
         self.active_connections = Gauge(
             'deeplake_active_connections',
@@ -338,9 +408,88 @@ class MetricsService(LoggingMixin):
             tenant_id=tenant_id or 'unknown'
         ).inc()
     
+    def track_import_request(self, dataset_id: str, tenant_id: Optional[str] = None) -> None:
+        """Track import request initiation."""
+        # This is called when an import is requested, detailed metrics are recorded on completion
+        pass
+    
+    def track_export_request(self, dataset_id: str, tenant_id: Optional[str] = None) -> None:
+        """Track export request initiation."""
+        # This is called when an export is requested, detailed metrics are recorded on completion
+        pass
+    
+    def record_import_job(self, dataset_id: str, format: str, status: str, duration: float, rows_processed: int, tenant_id: Optional[str] = None) -> None:
+        """Record import job completion metrics."""
+        tenant = tenant_id or 'unknown'
+        
+        self.import_jobs_total.labels(
+            dataset_id=dataset_id,
+            format=format,
+            status=status,
+            tenant_id=tenant
+        ).inc()
+        
+        self.import_duration.labels(
+            dataset_id=dataset_id,
+            format=format,
+            tenant_id=tenant
+        ).observe(duration)
+        
+        self.import_rows_processed.labels(
+            dataset_id=dataset_id,
+            format=format,
+            tenant_id=tenant
+        ).observe(rows_processed)
+    
+    def record_export_job(self, dataset_id: str, format: str, status: str, duration: float, vectors_exported: int, tenant_id: Optional[str] = None) -> None:
+        """Record export job completion metrics."""
+        tenant = tenant_id or 'unknown'
+        
+        self.export_jobs_total.labels(
+            dataset_id=dataset_id,
+            format=format,
+            status=status,
+            tenant_id=tenant
+        ).inc()
+        
+        self.export_duration.labels(
+            dataset_id=dataset_id,
+            format=format,
+            tenant_id=tenant
+        ).observe(duration)
+        
+        self.export_vectors_exported.labels(
+            dataset_id=dataset_id,
+            format=format,
+            tenant_id=tenant
+        ).observe(vectors_exported)
+    
     def update_active_connections(self, protocol: str, count: int) -> None:
         """Update active connections metrics."""
         self.active_connections.labels(protocol=protocol).set(count)
+    
+    def record_index_operation(
+        self,
+        dataset_id: str,
+        operation: str,
+        duration: float,
+        vectors: int,
+        tenant_id: Optional[str] = None
+    ) -> None:
+        """Record index operation metrics."""
+        self.index_operations_total.labels(
+            dataset_id=dataset_id,
+            operation=operation,
+            status="success",
+            tenant_id=tenant_id or "default"
+        ).inc()
+        
+        if operation == "create":
+            self.index_build_duration.labels(
+                dataset_id=dataset_id,
+                index_type="hnsw",  # Would need to pass this in
+                tenant_id=tenant_id or "default"
+            ).observe(duration)
     
     def update_memory_usage(self, component: str, bytes_used: int) -> None:
         """Update memory usage metrics."""
