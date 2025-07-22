@@ -11,12 +11,15 @@ import time
 
 from app.config.settings import settings
 from app.config.logging import configure_logging, get_logger
-from app.api.http.v1 import datasets, vectors, search, health
+from app.api.http.v1 import datasets, vectors, search, health, import_export, indexes, rate_limits, backup
 from app.api.http.dependencies import init_dependencies
 from app.services.deeplake_service import DeepLakeService
 from app.services.auth_service import AuthService
 from app.services.cache_service import CacheService
 from app.services.metrics_service import MetricsService
+from app.services.rate_limit_service import RateLimitService
+from app.services.backup_service import BackupService
+from app.middleware.rate_limit import RateLimitMiddleware
 from app.models.exceptions import DeepLakeServiceException
 
 
@@ -40,11 +43,19 @@ async def lifespan(app: FastAPI) -> Any:
         cache_service = CacheService()
         await cache_service.initialize()
 
+        # Initialize rate limit service
+        rate_limit_service = RateLimitService(cache_service.redis_client)
+        await rate_limit_service.initialize()
+
         # Initialize auth service
         auth_service = AuthService()
 
         # Initialize Deep Lake service
         deeplake_service = DeepLakeService()
+
+        # Initialize backup service
+        backup_service = BackupService(deeplake_service, cache_service)
+        await backup_service.initialize()
 
         # Initialize dependencies
         init_dependencies(
@@ -52,6 +63,8 @@ async def lifespan(app: FastAPI) -> Any:
             auth_service=auth_service,
             cache_service=cache_service,
             metrics_service=metrics_service,
+            rate_limit_service=rate_limit_service,
+            backup_service=backup_service,
         )
 
         # Store services in app state
@@ -59,6 +72,11 @@ async def lifespan(app: FastAPI) -> Any:
         app.state.auth_service = auth_service
         app.state.cache_service = cache_service
         app.state.metrics_service = metrics_service
+        app.state.rate_limit_service = rate_limit_service
+        app.state.backup_service = backup_service
+
+        # Rate limiting service is now initialized and available in app.state
+        # Middleware was added before app startup
 
         logger.info("All services initialized successfully")
 
@@ -78,6 +96,12 @@ async def lifespan(app: FastAPI) -> Any:
 
             if hasattr(app.state, "cache_service"):
                 await app.state.cache_service.close()
+
+            if hasattr(app.state, "rate_limit_service"):
+                await app.state.rate_limit_service.close()
+
+            if hasattr(app.state, "backup_service"):
+                await app.state.backup_service.close()
 
             logger.info("All services shut down successfully")
 
@@ -141,6 +165,20 @@ app.add_middleware(
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+)
+
+# Add rate limiting middleware
+# Note: The RateLimitService will be initialized during lifespan startup
+app.add_middleware(
+    RateLimitMiddleware,
+    exclude_paths=[
+        "/docs",
+        "/redoc", 
+        "/openapi.json",
+        "/api/v1/health",
+        "/api/v1/metrics",
+        "/"
+    ]
 )
 
 
@@ -294,6 +332,10 @@ app.include_router(health.router, prefix="/api/v1")
 app.include_router(datasets.router, prefix="/api/v1")
 app.include_router(vectors.router, prefix="/api/v1")
 app.include_router(search.router, prefix="/api/v1")
+app.include_router(import_export.router, prefix="/api/v1")
+app.include_router(indexes.router, prefix="/api/v1")
+app.include_router(rate_limits.router, prefix="/api/v1")
+app.include_router(backup.router, prefix="/api/v1")
 
 
 # Root endpoint
@@ -301,7 +343,7 @@ app.include_router(search.router, prefix="/api/v1")
 async def root() -> Dict[str, Any]:
     """Root endpoint with service information."""
     return {
-        "service": "Deep Lake Vector Service",
+        "service": "Tributary AI services for DeepLake",
         "version": "1.0.0",
         "status": "running",
         "docs_url": "/docs",

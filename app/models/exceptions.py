@@ -78,8 +78,8 @@ class AuthorizationException(DeepLakeServiceException):
 class RateLimitExceededException(DeepLakeServiceException):
     """Exception raised when rate limit is exceeded."""
     
-    def __init__(self, message: str = "Rate limit exceeded"):
-        super().__init__(message, "RATE_LIMIT_EXCEEDED")
+    def __init__(self, message: str = "Rate limit exceeded", details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, "RATE_LIMIT_EXCEEDED", details)
 
 
 class StorageException(DeepLakeServiceException):
@@ -108,3 +108,17 @@ class ServiceUnavailableException(DeepLakeServiceException):
     
     def __init__(self, message: str = "Service temporarily unavailable"):
         super().__init__(message, "SERVICE_UNAVAILABLE")
+
+
+class IndexingException(DeepLakeServiceException):
+    """Exception raised when vector indexing operations fail."""
+    
+    def __init__(self, message: str, index_type: Optional[str] = None):
+        super().__init__(message, "INDEXING_ERROR", {"index_type": index_type})
+
+
+class BackupException(DeepLakeServiceException):
+    """Exception raised during backup/restore operations."""
+    
+    def __init__(self, message: str, details: Optional[Dict[str, Any]] = None):
+        super().__init__(message, "BACKUP_ERROR", details or {})

@@ -1,4 +1,4 @@
-# Deep Lake Vector Service - Local Development Dependencies
+# Tributary AI services for DeepLake - Local Development Dependencies
 # ========================================================
 
 # Core FastAPI and server

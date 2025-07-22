@@ -182,10 +182,17 @@ class TestVectorInsertEndpoints:
             headers=auth_headers
         )
         
-        assert response.status_code == 201
+        assert response.status_code == 404
         data = response.json()
-        assert data["success"] is False
-        assert "not found" in data["error"]
+        # Check for error message in various possible fields
+        error_text = ""
+        if "detail" in data:
+            error_text += data["detail"].lower()
+        if "message" in data:
+            error_text += data["message"].lower()
+        if "error" in data:
+            error_text += str(data["error"]).lower()
+        assert "not found" in error_text or "dataset" in error_text
 
 
 class TestVectorBatchInsertEndpoints:

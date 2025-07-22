@@ -20,6 +20,8 @@ from app.services.deeplake_service import DeepLakeService
 from app.services.auth_service import AuthService
 from app.services.cache_service import CacheService
 from app.services.metrics_service import MetricsService
+from app.services.rate_limit_service import RateLimitService
+from app.services.backup_service import BackupService
 from app.api.http.dependencies import init_dependencies
 
 
@@ -31,15 +33,17 @@ def event_loop():
     loop.close()
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def temp_storage() -> Generator[str, None, None]:
     """Create a temporary storage directory for tests."""
-    temp_dir = tempfile.mkdtemp()
+    temp_dir = tempfile.mkdtemp(prefix='deeplake_test_')
     yield temp_dir
-    shutil.rmtree(temp_dir)
+    # Clean up
+    if os.path.exists(temp_dir):
+        shutil.rmtree(temp_dir, ignore_errors=True)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def deeplake_service(temp_storage: str) -> AsyncGenerator[DeepLakeService, None]:
     """Create a Deep Lake service instance for testing."""
     # Override storage location
@@ -47,22 +51,29 @@ async def deeplake_service(temp_storage: str) -> AsyncGenerator[DeepLakeService,
     os.environ["DEEPLAKE_STORAGE_LOCATION"] = temp_storage
     
     service = DeepLakeService()
-    yield service
-    
-    await service.close()
-    
-    # Restore original location
-    if original_location:
-        os.environ["DEEPLAKE_STORAGE_LOCATION"] = original_location
+    try:
+        yield service
+    finally:
+        # Clean up service state
+        await service.close()
+        # Clear any cached datasets
+        if hasattr(service, 'datasets'):
+            service.datasets.clear()
+        
+        # Restore original location
+        if original_location:
+            os.environ["DEEPLAKE_STORAGE_LOCATION"] = original_location
+        else:
+            os.environ.pop("DEEPLAKE_STORAGE_LOCATION", None)
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def auth_service() -> AuthService:
     """Create an auth service instance for testing."""
     return AuthService()
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def cache_service() -> AsyncGenerator[CacheService, None]:
     """Create a cache service instance for testing."""
     service = CacheService()
@@ -72,44 +83,111 @@ async def cache_service() -> AsyncGenerator[CacheService, None]:
     await service.close()
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 def metrics_service() -> MetricsService:
     """Create a metrics service instance for testing."""
     return MetricsService()
 
 
-@pytest.fixture  
+@pytest.fixture(scope="function")
+async def rate_limit_service() -> AsyncGenerator[RateLimitService, None]:
+    """Create a rate limit service instance for testing."""
+    service = RateLimitService()
+    # Don't initialize Redis for tests to avoid dependency
+    service.enabled = False
+    yield service
+    await service.close()
+
+
+@pytest.fixture(scope="function")  
 async def test_services(
+    deeplake_service: DeepLakeService,
     auth_service: AuthService,
-    metrics_service: MetricsService
+    cache_service: CacheService,
+    metrics_service: MetricsService,
+    rate_limit_service: RateLimitService
 ) -> tuple:
-    """Initialize all test services."""
-    # Create mock services for testing
-    deeplake_service = DeepLakeService()
-    cache_service = CacheService()
-    cache_service.enabled = False  # Disable Redis for tests
-    await cache_service.initialize()  # Initialize cache service
+    """Initialize all test services using isolated fixtures."""
+    # Create backup service with deeplake_service dependency
+    backup_service = BackupService(deeplake_service=deeplake_service)
     
     init_dependencies(
         deeplake_service=deeplake_service,
         auth_service=auth_service,
         cache_service=cache_service,
-        metrics_service=metrics_service
+        metrics_service=metrics_service,
+        rate_limit_service=rate_limit_service,
+        backup_service=backup_service
     )
-    return deeplake_service, auth_service, cache_service, metrics_service
+    return deeplake_service, auth_service, cache_service, metrics_service, rate_limit_service, backup_service
 
 
-@pytest.fixture
+@pytest.fixture(scope="function")
 async def client(test_services) -> TestClient:
     """Create a test client for the FastAPI app."""
-    return TestClient(app)
+    # The test_services fixture already initializes dependencies
+    # Create a new FastAPI app instance without lifespan to avoid startup conflicts
+    from fastapi import FastAPI
+    from app.main import app as original_app
+    
+    # Create a test app without lifespan
+    test_app = FastAPI(
+        title=original_app.title,
+        description=original_app.description,
+        version=original_app.version,
+        docs_url="/docs",
+        redoc_url="/redoc",
+    )
+    
+    # Copy all routes from the original app
+    for route in original_app.routes:
+        test_app.routes.append(route)
+    
+    # Copy middleware
+    test_app.user_middleware = original_app.user_middleware[:]
+    test_app.middleware_stack = original_app.middleware_stack
+    
+    # Set up the app state with test services
+    test_app.state.deeplake_service = test_services[0]
+    test_app.state.auth_service = test_services[1]
+    test_app.state.cache_service = test_services[2]
+    test_app.state.metrics_service = test_services[3]
+    test_app.state.rate_limit_service = test_services[4]
+    test_app.state.backup_service = test_services[5]
+    
+    with TestClient(test_app) as test_client:
+        yield test_client
+
+
+@pytest.fixture(autouse=True)
+def cleanup_global_state():
+    """Clean up global state before and after each test."""
+    # Before test: store original global state
+    import app.api.http.dependencies as deps
+    original_state = {
+        '_deeplake_service': getattr(deps, '_deeplake_service', None),
+        '_auth_service': getattr(deps, '_auth_service', None),
+        '_cache_service': getattr(deps, '_cache_service', None),
+        '_cache_manager': getattr(deps, '_cache_manager', None),
+        '_metrics_service': getattr(deps, '_metrics_service', None),
+        '_rate_limit_service': getattr(deps, '_rate_limit_service', None),
+        '_backup_service': getattr(deps, '_backup_service', None),
+    }
+    
+    yield
+    
+    # After test: restore original state
+    for key, value in original_state.items():
+        setattr(deps, key, value)
 
 
 @pytest.fixture
 def test_dataset_data():
     """Sample dataset data for testing."""
+    import uuid
+    unique_name = f"test-dataset-{uuid.uuid4().hex[:8]}"
     return {
-        "name": "test-dataset",
+        "name": unique_name,
         "description": "A test dataset for unit tests",
         "dimensions": 128,
         "metric_type": "cosine",
@@ -151,8 +229,11 @@ def test_search_data():
 
 
 @pytest.fixture
-def auth_headers(auth_service: AuthService):
+async def auth_headers(test_services):
     """Generate auth headers for testing."""
+    # Use the auth service from test_services to ensure consistency
+    auth_service = test_services[1]  # auth_service is the second item in the tuple
+    
     # Create a test API key
     api_key = auth_service.generate_api_key(
         tenant_id="default",
@@ -167,8 +248,11 @@ def auth_headers(auth_service: AuthService):
 
 
 @pytest.fixture
-def jwt_headers(auth_service: AuthService):
+async def jwt_headers(test_services):
     """Generate JWT auth headers for testing."""
+    # Use the auth service from test_services to ensure consistency
+    auth_service = test_services[1]  # auth_service is the second item in the tuple
+    
     # Create a test JWT token
     payload = {
         "tenant_id": "default",

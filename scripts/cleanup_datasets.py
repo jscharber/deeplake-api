@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Cleanup script to remove all datasets from the Deep Lake Vector Service.
+Cleanup script to remove all datasets from the Tributary AI services for DeepLake.
 Run this to clean up test datasets or reset the service state.
 """
 
@@ -18,7 +18,7 @@ if not API_KEY:
 
 def cleanup_all_datasets():
     """Clean up all existing datasets."""
-    print("🧹 Deep Lake Vector Service - Dataset Cleanup")
+    print("🧹 Tributary AI services for DeepLake - Dataset Cleanup")
     print("=" * 50)
     
     headers = {

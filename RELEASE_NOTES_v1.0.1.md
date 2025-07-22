@@ -1,4 +1,4 @@
-# Deep Lake Vector Service - Release Notes v1.0.1
+# Tributary AI services for DeepLake - Release Notes v1.0.1
 
 ## 🔒 Security Hardening Release
 **Release Date**: 2025-07-16  
@@ -250,4 +250,4 @@ For questions or issues with this release:
 
 ---
 
-**🎉 Thank you for upgrading to v1.0.1! This release significantly improves the security posture of Deep Lake Vector Service while maintaining all existing functionality.**
+**🎉 Thank you for upgrading to v1.0.1! This release significantly improves the security posture of Tributary AI services for DeepLake while maintaining all existing functionality.**

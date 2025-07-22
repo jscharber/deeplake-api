@@ -109,12 +109,17 @@ class TestDeepLakeService:
         # Try to insert vector with wrong dimensions
         vector_create = VectorCreate(**test_vector_data)  # Has 128 dimensions
         
-        with pytest.raises(InvalidVectorDimensionsException):
-            await deeplake_service.insert_vectors(
-                dataset_id=dataset.id,
-                vectors=[vector_create],
-                tenant_id="default"
-            )
+        result = await deeplake_service.insert_vectors(
+            dataset_id=dataset.id,
+            vectors=[vector_create],
+            tenant_id="default"
+        )
+        
+        # Should handle dimension error as soft failure
+        assert result.inserted_count == 0
+        assert result.failed_count == 1
+        assert len(result.error_messages) == 1
+        assert "dimensions mismatch" in result.error_messages[0].lower()
     
     async def test_search_vectors(self, deeplake_service: DeepLakeService, test_dataset_data, test_vector_data, test_search_data):
         """Test vector search."""

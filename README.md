@@ -35,17 +35,30 @@ A production-ready, universal vector database service built with Deep Lake, prov
    cd deeplake-vector-service
    ```
 
-2. **Start the service**
+2. **Start all services (including monitoring)**
    ```bash
    docker-compose up -d
    ```
 
-3. **Verify the service is running**
+3. **Access the Monitoring Dashboard**
+   ```bash
+   # Open in your browser:
+   http://localhost:8080
+   
+   # The dashboard provides access to:
+   # - Service health monitoring
+   # - Grafana dashboards (localhost:3000)
+   # - Prometheus metrics (localhost:9090) 
+   # - AlertManager (localhost:9093)
+   # - API documentation (localhost:8000/docs)
+   ```
+
+4. **Verify the service is running**
    ```bash
    curl http://localhost:8000/api/v1/health
    ```
 
-4. **Generate and configure API key**
+5. **Generate and configure API key**
    ```bash
    # Generate JWT secret
    export JWT_SECRET_KEY=$(python -c "import secrets; print(secrets.token_urlsafe(32))")
@@ -55,7 +68,7 @@ A production-ready, universal vector database service built with Deep Lake, prov
    export API_KEY="your-generated-api-key"
    ```
 
-5. **Create your first dataset**
+6. **Create your first dataset**
    ```bash
    curl -X POST http://localhost:8000/api/v1/datasets/ \
      -H "Authorization: ApiKey $API_KEY" \
@@ -406,6 +419,228 @@ MONITORING_LOG_FORMAT=json
 MONITORING_LOG_FORMAT=console
 ```
 
+## 🚨 Alerting System
+
+The DeepLake API includes a comprehensive alerting system for proactive monitoring and incident response.
+
+### 🔧 Quick Setup
+
+1. **Start the monitoring stack**:
+   ```bash
+   docker-compose up -d
+   ```
+
+2. **Configure notifications**:
+   ```bash
+   # Run the alerting setup script
+   ./scripts/setup-alerting.sh
+   ```
+
+3. **Test the system**:
+   ```bash
+   # Run alerting tests
+   ./scripts/test-alerting.sh
+   ```
+
+### 📊 Monitoring Components
+
+- **Prometheus** (`:9090`): Metrics collection and alert evaluation
+- **Alertmanager** (`:9093`): Alert routing and notifications
+- **Grafana** (`:3000`): Dashboards and visualization
+- **Redis**: Cache monitoring and health checks
+
+### 🔔 Alert Types
+
+**Service Health**:
+- Service downtime detection (DeepLakeAPIDown)
+- Cache service monitoring (RedisCacheDown)
+- High error rates (>5% warning, >10% critical)
+
+**Performance**:
+- Response latency (>2s warning, >5s critical)
+- Search query performance (>10s warning, >30s critical)
+- Vector insertion speed monitoring
+
+**Resource Usage**:
+- Memory consumption (>2GB warning, >4GB critical)
+- Storage growth monitoring (>1GB/hour warning)
+- Cache hit rate monitoring (<50% warning)
+
+**Data Operations**:
+- Vector insertion activity monitoring
+- Dataset size alerts (>10GB warning)
+- Tenant-specific performance monitoring
+
+### 📞 Notification Channels
+
+Configure multiple notification channels in `deployment/alertmanager.yml`:
+
+**Slack**:
+```yaml
+slack_configs:
+- api_url: 'https://hooks.slack.com/services/YOUR/WEBHOOK'
+  channel: '#alerts-critical'
+  title: 'DeepLake API Alert'
+  send_resolved: true
+```
+
+**PagerDuty**:
+```yaml
+pagerduty_configs:
+- routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
+  description: 'DeepLake API Critical Alert'
+  severity: 'critical'
+```
+
+**Email**:
+```yaml
+email_configs:
+- to: 'oncall@yourcompany.com'
+  subject: 'DeepLake API Alert'
+  body: 'Alert details...'
+```
+
+### 🧪 Testing Alerts
+
+```bash
+# Basic alert system test
+./scripts/test-alerting.sh
+
+# Simulate high error rate
+./scripts/test-alerting.sh error-rate
+
+# Simulate service downtime
+./scripts/test-alerting.sh service-down
+
+# Run stress test
+./scripts/test-alerting.sh stress
+```
+
+### 📋 Service URLs
+
+- **Grafana Dashboard**: http://localhost:3000
+- **Prometheus Metrics**: http://localhost:9090
+- **Alertmanager Console**: http://localhost:9093
+- **DeepLake API Health**: http://localhost:8000/api/v1/health
+- **Prometheus Metrics Endpoint**: http://localhost:8000/api/v1/metrics/prometheus
+
+### 📚 Documentation
+
+- **Setup Guide**: `deployment/alerting-setup.md`
+- **Configuration Templates**: `deployment/alertmanager-templates.yml`
+- **Alert Rules**: `deployment/prometheus-alerts.yml`
+
+## 📦 Bulk Import/Export
+
+Efficiently transfer large amounts of vector data with comprehensive import/export functionality.
+
+### 🔧 Supported Formats
+
+- **CSV**: Simple tabular format for vectors and metadata
+- **JSON**: Structured format with full metadata support  
+- **JSONL**: Line-delimited JSON for streaming large datasets
+
+### 📊 Features
+
+- **Asynchronous Processing**: Large operations run in background
+- **Progress Tracking**: Real-time status monitoring
+- **Error Handling**: Detailed error reporting and partial success handling
+- **Filtering**: Export subsets based on metadata filters
+- **Batch Processing**: Configurable batch sizes for optimal performance
+
+### 🚀 Quick Usage
+
+**Import vectors**:
+```bash
+curl -X POST "http://localhost:8000/api/v1/datasets/my-dataset/import" \
+  -H "Authorization: ApiKey your-api-key" \
+  -F "file=@vectors.csv" \
+  -F "format=csv"
+```
+
+**Export vectors**:
+```bash
+curl -X POST "http://localhost:8000/api/v1/datasets/my-dataset/export" \
+  -H "Authorization: ApiKey your-api-key" \
+  -d '{"format": "json", "limit": 1000}'
+```
+
+**Monitor progress**:
+```bash
+curl "http://localhost:8000/api/v1/import/{job_id}" \
+  -H "Authorization: ApiKey your-api-key"
+```
+
+### 🧪 Testing
+
+```bash
+# Test import/export functionality
+./test_import_export.py
+```
+
+### 📚 Documentation
+
+- **Complete Guide**: `docs/import-export.md`
+- **API Reference**: Available in `/docs` endpoint
+- **Sample Files**: Various format examples included
+
+## 🔍 Hybrid Search
+
+Advanced search combining vector similarity and text search for superior results.
+
+### 🧠 Fusion Methods
+
+- **Weighted Sum**: Simple weighted combination (default)
+- **Reciprocal Rank Fusion**: Advanced rank-based fusion
+- **CombSUM/CombMNZ**: Score aggregation methods
+- **Borda Count**: Democratic voting approach
+
+### ⚡ Features
+
+- **Configurable Weighting**: Balance semantic vs keyword search
+- **Intelligent Caching**: Optimized performance for repeated queries
+- **Multiple Algorithms**: 5 different fusion methods available
+- **Metadata Integration**: Works with advanced metadata filtering
+
+### 🚀 Quick Usage
+
+**Balanced hybrid search**:
+```bash
+curl -X POST "http://localhost:8000/api/v1/datasets/my-dataset/search/hybrid" \
+  -H "Authorization: ApiKey your-api-key" \
+  -d '{
+    "query_text": "machine learning tutorial",
+    "vector_weight": 0.6,
+    "text_weight": 0.4,
+    "fusion_method": "weighted_sum"
+  }'
+```
+
+**Semantic-heavy search**:
+```bash
+curl -X POST "http://localhost:8000/api/v1/datasets/my-dataset/search/hybrid" \
+  -H "Authorization: ApiKey your-api-key" \
+  -d '{
+    "query_text": "natural language understanding",
+    "vector_weight": 0.8,
+    "text_weight": 0.2,
+    "fusion_method": "reciprocal_rank_fusion"
+  }'
+```
+
+### 🧪 Testing
+
+```bash
+# Test all fusion methods and configurations
+./test_hybrid_search.py
+```
+
+### 📚 Documentation
+
+- **Complete Guide**: `docs/hybrid-search.md`
+- **Fusion Method Details**: Comprehensive algorithm explanations
+- **Performance Tuning**: Weight optimization guidelines
+
 ## 🛠️ Development
 
 ### Setup Development Environment
@@ -491,22 +726,25 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 🗺️ Roadmap
 
-### ✅ Recently Completed (v1.0.1)
+### ✅ Recently Completed (v1.0.2)
 - [x] **Security Hardening**: Removed hardcoded API keys and JWT secrets
 - [x] **Documentation Access**: Always-available API documentation
 - [x] **Service Configuration**: Enhanced environment variable support
-
-### 🚧 In Progress
-- [ ] **Cosine Similarity**: Implementation of cosine distance metric
-- [ ] **Metadata Filtering**: Advanced search filtering capabilities
+- [x] **Cosine Similarity**: Implementation of cosine distance metric
+- [x] **Metadata Filtering**: Advanced search filtering capabilities
+- [x] **Alerting System**: Comprehensive monitoring and alerting infrastructure
+- [x] **Grafana Dashboards**: Operational monitoring dashboards
+- [x] **Bulk Import/Export**: CSV, JSON, and JSONL import/export with progress tracking
+- [x] **Hybrid Search**: Vector + text search with multiple fusion algorithms
 
 ### 🎯 Upcoming Features
 - [ ] **Text embedding integration**: Direct embedding service integration
 - [ ] **Advanced indexing options**: HNSW and IVF index support
 - [ ] **Horizontal scaling support**: Multi-instance deployment
-- [ ] **Grafana dashboards**: Operational monitoring dashboards
 - [ ] **GraphQL API**: Alternative query interface
 - [ ] **Real-time search updates**: Live search result updates
+- [ ] **Machine Learning Ops**: Model versioning and A/B testing
+- [ ] **Data Pipeline Integration**: ETL connectors and streaming support
 
 See [ROADMAP.md](ROADMAP.md) for detailed planning and timelines.
 

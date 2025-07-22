@@ -85,6 +85,7 @@ services:
       - "9090:9090"
     volumes:
       - ./deployment/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./deployment/prometheus-alerts.yml:/etc/prometheus/prometheus-alerts.yml
       - prometheus_data:/prometheus
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
@@ -104,8 +105,41 @@ services:
       - "3000:3000"
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_PATHS_PROVISIONING=/etc/grafana/provisioning
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./deployment/grafana/provisioning:/etc/grafana/provisioning
+      - ./deployment/grafana/dashboards:/etc/grafana/provisioning/dashboards/deeplake
+    restart: unless-stopped
+    networks:
+      - deeplake-network
+
+  # Alertmanager for alert routing and notifications
+  alertmanager:
+    image: prom/alertmanager:latest
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./deployment/alertmanager.yml:/etc/alertmanager/alertmanager.yml
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+      - '--log.level=info'
+    restart: unless-stopped
+    networks:
+      - deeplake-network
+
+  # Monitoring Dashboard - HTML server with Markdown rendering
+  monitoring-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile.monitoring
+    ports:
+      - "8080:8080"
+    environment:
+      - PORT=8080
     restart: unless-stopped
     networks:
       - deeplake-network
@@ -114,6 +148,7 @@ volumes:
   redis_data:
   prometheus_data:
   grafana_data:
+  alertmanager_data:
 
 networks:
   deeplake-network:

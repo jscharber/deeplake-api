@@ -1,0 +1,127 @@
+# Backup Configuration for Different Environments
+
+# Production Environment
+production:
+  backup:
+    enabled: true
+    schedule: "0 2 * * *"  # Daily at 2 AM
+    retention_days: 90
+    storage_backend: "s3"
+    storage_path: "/backups"
+    s3_bucket: "deeplake-prod-backups"
+    s3_region: "us-east-1"
+    s3_prefix: "deeplake-backups"
+    compression: true
+    encryption: true
+    parallel_workers: 8
+    
+    # Retention policy
+    daily_retention: 7
+    weekly_retention: 4
+    monthly_retention: 12
+    yearly_retention: 5
+    
+    # Disaster recovery
+    cross_region_replication: true
+    secondary_region: "us-west-2"
+    
+    # Notification settings
+    notifications:
+      enabled: true
+      slack_webhook: "${SLACK_WEBHOOK_URL}"
+      email_recipients:
+        - "ops@company.com"
+        - "sre@company.com"
+      
+    # Backup types schedule
+    schedules:
+      full_backup: "0 2 * * 0"      # Weekly on Sunday at 2 AM
+      incremental: "0 2 * * 1-6"    # Daily Mon-Sat at 2 AM
+      snapshot: "0 */6 * * *"       # Every 6 hours
+      
+# Staging Environment
+staging:
+  backup:
+    enabled: true
+    schedule: "0 3 * * *"  # Daily at 3 AM
+    retention_days: 30
+    storage_backend: "s3"
+    storage_path: "/backups"
+    s3_bucket: "deeplake-staging-backups"
+    s3_region: "us-east-1"
+    s3_prefix: "deeplake-backups"
+    compression: true
+    encryption: false
+    parallel_workers: 4
+    
+    # Retention policy
+    daily_retention: 7
+    weekly_retention: 2
+    monthly_retention: 3
+    
+    # Disaster recovery
+    cross_region_replication: false
+    
+    # Notification settings
+    notifications:
+      enabled: true
+      slack_webhook: "${SLACK_WEBHOOK_URL}"
+      email_recipients:
+        - "dev@company.com"
+      
+    # Backup types schedule
+    schedules:
+      full_backup: "0 3 * * 0"      # Weekly on Sunday at 3 AM
+      incremental: "0 3 * * 1-6"    # Daily Mon-Sat at 3 AM
+      
+# Development Environment
+development:
+  backup:
+    enabled: true
+    schedule: "0 4 * * *"  # Daily at 4 AM
+    retention_days: 7
+    storage_backend: "local"
+    storage_path: "/tmp/backups"
+    compression: true
+    encryption: false
+    parallel_workers: 2
+    
+    # Retention policy
+    daily_retention: 7
+    weekly_retention: 1
+    monthly_retention: 0
+    
+    # Disaster recovery
+    cross_region_replication: false
+    
+    # Notification settings
+    notifications:
+      enabled: false
+      
+    # Backup types schedule
+    schedules:
+      full_backup: "0 4 * * 0"      # Weekly on Sunday at 4 AM
+      
+# Test Environment
+test:
+  backup:
+    enabled: false
+    schedule: "0 5 * * *"  # Daily at 5 AM
+    retention_days: 3
+    storage_backend: "local"
+    storage_path: "/tmp/test-backups"
+    compression: false
+    encryption: false
+    parallel_workers: 1
+    
+    # Retention policy
+    daily_retention: 3
+    weekly_retention: 0
+    monthly_retention: 0
+    
+    # Disaster recovery
+    cross_region_replication: false
+    
+    # Notification settings
+    notifications:
+      enabled: false

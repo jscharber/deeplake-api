@@ -3,7 +3,7 @@
 Local Development Configuration
 ===============================
 
-This file sets up the environment for running the Deep Lake Vector Service
+This file sets up the environment for running Tributary AI services for DeepLake
 locally for debugging and development.
 """
 
@@ -75,7 +75,7 @@ def setup_local_environment():
 def print_setup_info():
     """Print information about the local setup."""
     print("\n" + "="*60)
-    print("🚀 DEEP LAKE VECTOR SERVICE - LOCAL DEVELOPMENT SETUP")
+    print("🚀 TRIBUTARY AI SERVICES FOR DEEPLAKE - LOCAL DEVELOPMENT SETUP")
     print("="*60)
     
     print("\n📁 Project Structure:")

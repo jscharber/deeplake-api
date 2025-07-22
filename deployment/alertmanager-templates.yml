@@ -1,0 +1,380 @@
+# Alertmanager Configuration Templates
+# Copy sections from here to customize your alertmanager.yml
+
+# ===========================================
+# SLACK CONFIGURATION EXAMPLES
+# ===========================================
+
+# Basic Slack Configuration
+slack_basic: &slack_basic
+  slack_configs:
+  - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+    channel: '#alerts'
+    title: 'DeepLake API Alert'
+    text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+    send_resolved: true
+
+# Advanced Slack Configuration with Custom Fields
+slack_advanced: &slack_advanced
+  slack_configs:
+  - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+    channel: '#alerts-critical'
+    title: 'DeepLake API Critical Alert'
+    text: |
+      {{ range .Alerts }}
+      *Alert:* {{ .Annotations.summary }}
+      *Description:* {{ .Annotations.description }}
+      *Severity:* {{ .Labels.severity }}
+      *Instance:* {{ .Labels.instance }}
+      *Time:* {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+      {{ end }}
+    send_resolved: true
+    actions:
+    - type: button
+      text: 'View in Grafana'
+      url: 'http://localhost:3000'
+    - type: button
+      text: 'View in Prometheus'
+      url: 'http://localhost:9090'
+
+# ===========================================
+# PAGERDUTY CONFIGURATION EXAMPLES
+# ===========================================
+
+# Basic PagerDuty Configuration
+pagerduty_basic: &pagerduty_basic
+  pagerduty_configs:
+  - routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
+    description: 'DeepLake API Alert: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+    severity: '{{ .GroupLabels.severity }}'
+
+# Advanced PagerDuty Configuration with Custom Fields
+pagerduty_advanced: &pagerduty_advanced
+  pagerduty_configs:
+  - routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
+    description: 'DeepLake API Alert: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+    severity: '{{ .GroupLabels.severity }}'
+    details:
+      service: 'DeepLake API'
+      environment: 'production'
+      alert_count: '{{ len .Alerts }}'
+      firing_alerts: '{{ range .Alerts.Firing }}{{ .Labels.alertname }} {{ end }}'
+      resolved_alerts: '{{ range .Alerts.Resolved }}{{ .Labels.alertname }} {{ end }}'
+    links:
+    - href: 'http://localhost:3000'
+      text: 'Grafana Dashboard'
+    - href: 'http://localhost:9090'
+      text: 'Prometheus Alerts'
+
+# ===========================================
+# EMAIL CONFIGURATION EXAMPLES
+# ===========================================
+
+# Basic Email Configuration
+email_basic: &email_basic
+  email_configs:
+  - to: 'oncall@yourcompany.com'
+    from: 'alertmanager@yourcompany.com'
+    subject: 'DeepLake API Alert'
+    body: |
+      Alert Details:
+      {{ range .Alerts }}
+      - Alert: {{ .Annotations.summary }}
+      - Description: {{ .Annotations.description }}
+      - Severity: {{ .Labels.severity }}
+      - Instance: {{ .Labels.instance }}
+      - Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+      {{ end }}
+
+# HTML Email Configuration
+email_html: &email_html
+  email_configs:
+  - to: 'oncall@yourcompany.com'
+    from: 'alertmanager@yourcompany.com'
+    subject: 'DeepLake API Alert - {{ .GroupLabels.severity }}'
+    html: |
+      <html>
+      <body>
+        <h2>DeepLake API Alert</h2>
+        <table border="1" style="border-collapse: collapse;">
+          <tr>
+            <th>Alert</th>
+            <th>Description</th>
+            <th>Severity</th>
+            <th>Instance</th>
+            <th>Time</th>
+          </tr>
+          {{ range .Alerts }}
+          <tr>
+            <td>{{ .Annotations.summary }}</td>
+            <td>{{ .Annotations.description }}</td>
+            <td>{{ .Labels.severity }}</td>
+            <td>{{ .Labels.instance }}</td>
+            <td>{{ .StartsAt.Format "2006-01-02 15:04:05" }}</td>
+          </tr>
+          {{ end }}
+        </table>
+        <p>
+          <a href="http://localhost:3000">View in Grafana</a> |
+          <a href="http://localhost:9090">View in Prometheus</a>
+        </p>
+      </body>
+      </html>
+
+# ===========================================
+# WEBHOOK CONFIGURATION EXAMPLES
+# ===========================================
+
+# Basic Webhook Configuration
+webhook_basic: &webhook_basic
+  webhook_configs:
+  - url: 'https://your-webhook-endpoint.com/alerts'
+    send_resolved: true
+
+# Advanced Webhook Configuration with Custom Headers
+webhook_advanced: &webhook_advanced
+  webhook_configs:
+  - url: 'https://your-webhook-endpoint.com/alerts'
+    send_resolved: true
+    http_config:
+      basic_auth:
+        username: 'webhook-user'
+        password: 'webhook-password'
+    headers:
+      X-Service: 'DeepLake-API'
+      X-Environment: 'production'
+
+# ===========================================
+# DISCORD CONFIGURATION EXAMPLES
+# ===========================================
+
+# Discord Webhook Configuration
+discord_basic: &discord_basic
+  discord_configs:
+  - webhook_url: 'https://discord.com/api/webhooks/YOUR/WEBHOOK/URL'
+    title: 'DeepLake API Alert'
+    message: |
+      {{ range .Alerts }}
+      **Alert:** {{ .Annotations.summary }}
+      **Description:** {{ .Annotations.description }}
+      **Severity:** {{ .Labels.severity }}
+      **Instance:** {{ .Labels.instance }}
+      **Time:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+      {{ end }}
+
+# ===========================================
+# MICROSOFT TEAMS CONFIGURATION EXAMPLES
+# ===========================================
+
+# Microsoft Teams Webhook Configuration
+teams_basic: &teams_basic
+  teams_configs:
+  - webhook_url: 'https://outlook.office.com/webhook/YOUR/WEBHOOK/URL'
+    title: 'DeepLake API Alert'
+    text: |
+      {{ range .Alerts }}
+      **Alert:** {{ .Annotations.summary }}
+      **Description:** {{ .Annotations.description }}
+      **Severity:** {{ .Labels.severity }}
+      **Instance:** {{ .Labels.instance }}
+      **Time:** {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+      {{ end }}
+
+# ===========================================
+# COMPLETE EXAMPLE CONFIGURATIONS
+# ===========================================
+
+# Example 1: Startup/Small Team Configuration
+startup_config_example:
+  global:
+    slack_api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+  
+  route:
+    group_by: ['alertname']
+    group_wait: 10s
+    group_interval: 10s
+    repeat_interval: 1h
+    receiver: 'slack-alerts'
+    routes:
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      repeat_interval: 15m
+  
+  receivers:
+  - name: 'slack-alerts'
+    slack_configs:
+    - channel: '#alerts'
+      title: 'DeepLake API Alert'
+      text: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+      send_resolved: true
+  
+  - name: 'critical-alerts'
+    slack_configs:
+    - channel: '#alerts-critical'
+      title: 'DeepLake API Critical Alert'
+      text: |
+        🚨 Critical Alert: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}
+        📋 Description: {{ range .Alerts }}{{ .Annotations.description }}{{ end }}
+        🏠 Instance: {{ range .Alerts }}{{ .Labels.instance }}{{ end }}
+      send_resolved: true
+
+# Example 2: Enterprise Configuration
+enterprise_config_example:
+  global:
+    smtp_smarthost: 'smtp.yourcompany.com:587'
+    smtp_from: 'alertmanager@yourcompany.com'
+    smtp_auth_username: 'alertmanager@yourcompany.com'
+    smtp_auth_password: 'your-smtp-password'
+  
+  route:
+    group_by: ['alertname', 'cluster', 'service']
+    group_wait: 10s
+    group_interval: 10s
+    repeat_interval: 1h
+    receiver: 'default-alerts'
+    routes:
+    - match:
+        severity: critical
+      receiver: 'critical-alerts'
+      repeat_interval: 5m
+    - match:
+        severity: warning
+      receiver: 'warning-alerts'
+      repeat_interval: 2h
+    - match:
+        alertname: DeepLakeAPIDown
+      receiver: 'service-down-alerts'
+      repeat_interval: 2m
+  
+  receivers:
+  - name: 'default-alerts'
+    email_configs:
+    - to: 'team@yourcompany.com'
+      subject: 'DeepLake API Alert'
+      body: |
+        Alert Details:
+        {{ range .Alerts }}
+        - Alert: {{ .Annotations.summary }}
+        - Description: {{ .Annotations.description }}
+        - Severity: {{ .Labels.severity }}
+        - Instance: {{ .Labels.instance }}
+        {{ end }}
+  
+  - name: 'critical-alerts'
+    pagerduty_configs:
+    - routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
+      description: 'DeepLake API Critical Alert'
+      severity: 'critical'
+    slack_configs:
+    - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+      channel: '#alerts-critical'
+      title: 'DeepLake API Critical Alert'
+      text: '🚨 {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+      send_resolved: true
+    email_configs:
+    - to: 'oncall@yourcompany.com'
+      subject: 'CRITICAL: DeepLake API Alert'
+      body: |
+        Critical Alert Details:
+        {{ range .Alerts }}
+        - Alert: {{ .Annotations.summary }}
+        - Description: {{ .Annotations.description }}
+        - Severity: {{ .Labels.severity }}
+        - Instance: {{ .Labels.instance }}
+        - Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+        {{ end }}
+  
+  - name: 'warning-alerts'
+    slack_configs:
+    - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+      channel: '#alerts-warning'
+      title: 'DeepLake API Warning Alert'
+      text: '⚠️ {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+      send_resolved: true
+  
+  - name: 'service-down-alerts'
+    pagerduty_configs:
+    - routing_key: 'YOUR_PAGERDUTY_INTEGRATION_KEY'
+      description: 'DeepLake API Service Down'
+      severity: 'critical'
+    slack_configs:
+    - api_url: 'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+      channel: '#alerts-critical'
+      title: 'DeepLake API Service Down'
+      text: '🔴 SERVICE DOWN: {{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+      send_resolved: true
+    email_configs:
+    - to: 'oncall@yourcompany.com,sre@yourcompany.com'
+      subject: 'SERVICE DOWN: DeepLake API'
+      body: |
+        The DeepLake API service is down!
+        
+        Alert Details:
+        {{ range .Alerts }}
+        - Alert: {{ .Annotations.summary }}
+        - Description: {{ .Annotations.description }}
+        - Instance: {{ .Labels.instance }}
+        - Time: {{ .StartsAt.Format "2006-01-02 15:04:05" }}
+        {{ end }}
+        
+        Immediate action required!
+  
+  inhibit_rules:
+  - source_match:
+      severity: 'critical'
+    target_match:
+      severity: 'warning'
+    equal: ['alertname', 'instance']
+
+# ===========================================
+# ROUTING EXAMPLES
+# ===========================================
+
+# Example routing configurations for different scenarios
+routing_examples:
+  
+  # Route by tenant
+  tenant_routing:
+    routes:
+    - match:
+        tenant_id: 'tenant-1'
+      receiver: 'tenant-1-alerts'
+    - match:
+        tenant_id: 'tenant-2'
+      receiver: 'tenant-2-alerts'
+  
+  # Route by environment
+  environment_routing:
+    routes:
+    - match:
+        environment: 'production'
+      receiver: 'production-alerts'
+    - match:
+        environment: 'staging'
+      receiver: 'staging-alerts'
+  
+  # Route by time (business hours vs off-hours)
+  time_based_routing:
+    routes:
+    - match:
+        severity: 'critical'
+      receiver: 'critical-alerts'
+      group_interval: 5m
+      repeat_interval: 5m
+    - match:
+        severity: 'warning'
+      receiver: 'warning-alerts'
+      group_interval: 30m
+      repeat_interval: 2h
+      active_time_intervals:
+      - business_hours
+  
+  time_intervals:
+  - name: business_hours
+    time_intervals:
+    - times:
+      - start_time: '09:00'
+        end_time: '17:00'
+      weekdays: ['monday:friday']
+      location: 'America/New_York'
