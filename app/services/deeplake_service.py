@@ -450,6 +450,46 @@ class DeepLakeService(LoggingMixin):
             
             processing_time = (time.time() - start_time) * 1000
             
+            # Check if we need to build/rebuild index for large datasets
+            current_vector_count = len(dataset)
+            index_type = dataset_info.get('index_type', 'default')
+            
+            # Auto-create IVF index for datasets with many vectors
+            if (inserted_count > 0 and current_vector_count >= 10000 and 
+                index_type in ['default', 'ivf']):
+                
+                try:
+                    self.logger.info("Auto-creating IVF index for large dataset", 
+                                   dataset_id=dataset_id, vector_count=current_vector_count)
+                    
+                    # Create IVF index configuration
+                    ivf_params = IVFParameters(
+                        nlist=min(max(int(current_vector_count / 100), 100), 4096),
+                        nprobe=min(max(int(current_vector_count / 1000), 10), 128)
+                    )
+                    
+                    index_config = IndexConfig(
+                        index_type=IndexType.IVF,
+                        metric_type=dataset_info.get('metric_type', 'cosine'),
+                        dimensions=expected_dimensions,
+                        ivf_params=ivf_params
+                    )
+                    
+                    # Build index asynchronously
+                    index_stats = await self.index_service.create_index(
+                        dataset, index_config, force_rebuild=False
+                    )
+                    
+                    self.logger.info("IVF index created successfully", 
+                                   dataset_id=dataset_id, 
+                                   build_time=index_stats.build_time_seconds,
+                                   nlist=ivf_params.nlist)
+                                   
+                except Exception as e:
+                    # Index creation failure shouldn't fail the entire operation
+                    self.logger.warning("Failed to create IVF index", 
+                                      dataset_id=dataset_id, error=str(e))
+            
             self.logger.info(
                 "Vectors inserted",
                 dataset_id=dataset_id,
@@ -470,6 +510,130 @@ class DeepLakeService(LoggingMixin):
         except Exception as e:
             self.logger.error("Failed to insert vectors", dataset_id=dataset_id, error=str(e), exc_info=True)
             raise StorageException(f"Failed to insert vectors: {str(e)}", "insert_vectors")
+    
+    async def create_index(
+        self,
+        dataset_id: str,
+        index_type: str = "ivf",
+        parameters: Optional[Dict[str, Any]] = None,
+        tenant_id: Optional[str] = None
+    ) -> Dict[str, Any]:
+        """Create an index for a dataset."""
+        dataset_key = self._get_dataset_key(dataset_id, tenant_id)
+        dataset_path = self._get_dataset_path(dataset_id, tenant_id)
+        
+        if not os.path.exists(dataset_path):
+            raise DatasetNotFoundException(dataset_id, tenant_id)
+        
+        try:
+            # Load dataset
+            if dataset_key not in self.datasets:
+                self.datasets[dataset_key] = await self._load_dataset(dataset_path, read_only=False)
+            
+            dataset = self.datasets[dataset_key]
+            dataset_info = await self._load_dataset_metadata(dataset_path)
+            
+            # Create index configuration
+            if index_type.lower() == "ivf":
+                ivf_params = IVFParameters()
+                if parameters:
+                    if "nlist" in parameters:
+                        ivf_params.nlist = int(parameters["nlist"])
+                    if "nprobe" in parameters:
+                        ivf_params.nprobe = int(parameters["nprobe"])
+                
+                index_config = IndexConfig(
+                    index_type=IndexType.IVF,
+                    metric_type=dataset_info.get('metric_type', 'cosine'),
+                    dimensions=dataset_info.get('dimensions', 0),
+                    ivf_params=ivf_params
+                )
+            elif index_type.lower() == "hnsw":
+                hnsw_params = HNSWParameters()
+                if parameters:
+                    if "m" in parameters:
+                        hnsw_params.m = int(parameters["m"])
+                    if "ef_construction" in parameters:
+                        hnsw_params.ef_construction = int(parameters["ef_construction"])
+                    if "ef_search" in parameters:
+                        hnsw_params.ef_search = int(parameters["ef_search"])
+                
+                index_config = IndexConfig(
+                    index_type=IndexType.HNSW,
+                    metric_type=dataset_info.get('metric_type', 'cosine'),
+                    dimensions=dataset_info.get('dimensions', 0),
+                    hnsw_params=hnsw_params
+                )
+            elif index_type.lower() == "flat":
+                index_config = IndexConfig(
+                    index_type=IndexType.FLAT,
+                    metric_type=dataset_info.get('metric_type', 'cosine'),
+                    dimensions=dataset_info.get('dimensions', 0)
+                )
+            else:
+                raise ValidationException(f"Unsupported index type: {index_type}")
+            
+            # Create the index
+            self.logger.info("Creating index", dataset_id=dataset_id, index_type=index_type)
+            index_stats = await self.index_service.create_index(
+                dataset, index_config, force_rebuild=True
+            )
+            
+            self.logger.info("Index created successfully", 
+                           dataset_id=dataset_id,
+                           index_type=index_type,
+                           build_time=index_stats.build_time_seconds,
+                           vector_count=index_stats.total_vectors)
+            
+            return {
+                "index_type": index_stats.index_type,
+                "total_vectors": index_stats.total_vectors,
+                "index_size_bytes": index_stats.index_size_bytes,
+                "build_time_seconds": index_stats.build_time_seconds,
+                "parameters": index_stats.parameters,
+                "is_trained": index_stats.is_trained,
+                "created_at": index_stats.last_updated
+            }
+            
+        except Exception as e:
+            self.logger.error("Failed to create index", dataset_id=dataset_id, error=str(e))
+            raise StorageException(f"Failed to create index: {str(e)}", "create_index")
+    
+    async def get_index_info(
+        self,
+        dataset_id: str,
+        tenant_id: Optional[str] = None
+    ) -> Optional[Dict[str, Any]]:
+        """Get information about dataset's current index."""
+        dataset_key = self._get_dataset_key(dataset_id, tenant_id)
+        dataset_path = self._get_dataset_path(dataset_id, tenant_id)
+        
+        if not os.path.exists(dataset_path):
+            raise DatasetNotFoundException(dataset_id, tenant_id)
+        
+        try:
+            # Load dataset
+            if dataset_key not in self.datasets:
+                self.datasets[dataset_key] = await self._load_dataset(dataset_path, read_only=True)
+            
+            dataset = self.datasets[dataset_key]
+            
+            # Get index statistics
+            index_stats = await self.index_service.get_index_stats(dataset)
+            
+            return {
+                "index_type": index_stats.index_type,
+                "total_vectors": index_stats.total_vectors,
+                "index_size_bytes": index_stats.index_size_bytes,
+                "build_time_seconds": index_stats.build_time_seconds,
+                "parameters": index_stats.parameters,
+                "is_trained": index_stats.is_trained,
+                "last_updated": index_stats.last_updated
+            }
+            
+        except Exception as e:
+            self.logger.error("Failed to get index info", dataset_id=dataset_id, error=str(e))
+            return None
     
     async def search_vectors(
         self,
@@ -650,6 +814,7 @@ class DeepLakeService(LoggingMixin):
                     # Calculate similarity score based on metric type
                     vector_values = np.array(vector_data['values'])
                     
+                    # Implement all supported distance metrics
                     if metric_type.lower() == 'cosine':
                         # Calculate cosine similarity
                         dot_product = np.dot(query_embedding, vector_values)
@@ -662,8 +827,29 @@ class DeepLakeService(LoggingMixin):
                         else:
                             score = dot_product / (query_norm * vector_norm)
                             distance = 1.0 - score  # Convert similarity to distance
-                    else:  # L2 or euclidean
-                        # Calculate L2 distance
+                    
+                    elif metric_type.lower() == 'dot_product':
+                        # Calculate dot product similarity (higher is better)
+                        dot_product = np.dot(query_embedding, vector_values)
+                        score = dot_product
+                        # Convert to distance (lower is better) by inverting
+                        distance = -dot_product if dot_product != 0 else float('inf')
+                    
+                    elif metric_type.lower() == 'manhattan':
+                        # Calculate Manhattan (L1) distance
+                        distance = np.sum(np.abs(query_embedding - vector_values))
+                        score = 1.0 / (1.0 + distance) if distance > 0 else 1.0
+                    
+                    elif metric_type.lower() == 'hamming':
+                        # Calculate Hamming distance (for binary/categorical data)
+                        # Convert continuous vectors to binary for Hamming distance
+                        query_binary = (query_embedding > 0.5).astype(int)
+                        vector_binary = (vector_values > 0.5).astype(int)
+                        distance = np.sum(query_binary != vector_binary) / len(query_binary)
+                        score = 1.0 - distance  # Convert distance to similarity
+                    
+                    else:  # euclidean (L2) - default
+                        # Calculate L2 (Euclidean) distance
                         distance = np.linalg.norm(query_embedding - vector_values)
                         score = 1.0 / (1.0 + distance) if distance > 0 else 1.0
                     
@@ -699,13 +885,16 @@ class DeepLakeService(LoggingMixin):
                     self.logger.warning("Failed to process search result", index=i, error=str(e))
                     continue
             
-            # Sort candidates by score (descending for similarities, ascending for distances)
-            if metric_type.lower() == 'cosine':
-                # For cosine similarity, higher scores are better
+            # Sort candidates by score - different metrics require different sorting
+            if metric_type.lower() in ['cosine', 'hamming']:
+                # For similarity metrics, higher scores are better
                 candidates.sort(key=lambda x: x['score'], reverse=True)
-            else:
-                # For L2 distance, lower distances are better (but we use score which is inverse)
+            elif metric_type.lower() == 'dot_product':
+                # For dot product, higher values are better (more similar)
                 candidates.sort(key=lambda x: x['score'], reverse=True)
+            else:  # euclidean, manhattan - distance metrics
+                # For distance metrics, lower distances are better
+                candidates.sort(key=lambda x: x['distance'], reverse=False)
             
             # Apply filtering and create final results
             results = []

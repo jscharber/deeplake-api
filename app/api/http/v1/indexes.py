@@ -40,7 +40,7 @@ class IndexOptimizeRequest(BaseModel):
     sample_size: int = Field(default=100, ge=10, le=1000, description="Number of sample queries")
 
 
-@router.post("/datasets/{dataset_id}/index", response_model=IndexStats)
+@router.post("/datasets/{dataset_id}/index", response_model=Dict[str, Any])
 async def create_or_update_index(
     dataset_id: str = Path(..., description="Dataset ID"),
     request: IndexCreateRequest = ...,
@@ -48,55 +48,42 @@ async def create_or_update_index(
     deeplake_service: DeepLakeService = Depends(get_deeplake_service),
     metrics_service: MetricsService = Depends(get_metrics_service),
     auth_info: dict = Depends(authorize_operation("admin"))
-) -> IndexStats:
+) -> Dict[str, Any]:
     """Create or update index for a dataset."""
     try:
-        # Get dataset
-        dataset_response = await deeplake_service.get_dataset(dataset_id, tenant_id)
+        # Prepare parameters
+        parameters = {}
+        if request.index_type.lower() == "hnsw":
+            parameters.update({
+                "m": request.hnsw_m,
+                "ef_construction": request.hnsw_ef_construction,
+                "ef_search": request.hnsw_ef_search
+            })
+            # Remove None values
+            parameters = {k: v for k, v in parameters.items() if v is not None}
+            
+        elif request.index_type.lower() == "ivf":
+            parameters.update({
+                "nlist": request.ivf_nlist,
+                "nprobe": request.ivf_nprobe
+            })
+            # Remove None values
+            parameters = {k: v for k, v in parameters.items() if v is not None}
         
-        # Load the actual dataset
-        dataset_key = deeplake_service._get_dataset_key(dataset_id, tenant_id)
-        dataset = deeplake_service.datasets.get(dataset_key)
-        
-        if not dataset:
-            raise HTTPException(status_code=404, detail="Dataset not loaded")
-        
-        # Build index configuration
-        from app.services.index_service import IndexType, IndexConfig
-        
-        index_type = IndexType(request.index_type)
-        index_config = IndexConfig(
-            index_type=index_type,
-            metric_type=dataset_response.metric_type,
-            dimensions=dataset_response.dimensions
-        )
-        
-        # Add type-specific parameters
-        if index_type == IndexType.HNSW:
-            index_config.hnsw_params = HNSWParameters(
-                m=request.hnsw_m or 16,
-                ef_construction=request.hnsw_ef_construction or 200,
-                ef_search=request.hnsw_ef_search or 50
-            )
-        elif index_type == IndexType.IVF:
-            index_config.ivf_params = IVFParameters(
-                nlist=request.ivf_nlist or 100,
-                nprobe=request.ivf_nprobe or 10
-            )
-        
-        # Create/update index
-        stats = await deeplake_service.index_service.create_index(
-            dataset, 
-            index_config, 
-            force_rebuild=request.force_rebuild
+        # Create index using the new service method
+        index_info = await deeplake_service.create_index(
+            dataset_id=dataset_id,
+            index_type=request.index_type,
+            parameters=parameters if parameters else None,
+            tenant_id=tenant_id
         )
         
         # Record metrics
         metrics_service.record_index_operation(
             dataset_id, 
             "create", 
-            stats.build_time_seconds,
-            stats.total_vectors,
+            index_info["build_time_seconds"],
+            index_info["total_vectors"],
             tenant_id
         )
         
@@ -104,11 +91,11 @@ async def create_or_update_index(
             "Index created/updated",
             dataset_id=dataset_id,
             index_type=request.index_type,
-            build_time=stats.build_time_seconds,
+            build_time=index_info["build_time_seconds"],
             tenant_id=tenant_id
         )
         
-        return stats
+        return index_info
         
     except DatasetNotFoundException:
         raise HTTPException(status_code=404, detail=f"Dataset {dataset_id} not found")
@@ -120,29 +107,30 @@ async def create_or_update_index(
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@router.get("/datasets/{dataset_id}/index", response_model=IndexStats)
+@router.get("/datasets/{dataset_id}/index", response_model=Optional[Dict[str, Any]])
 async def get_index_stats(
     dataset_id: str = Path(..., description="Dataset ID"),
     tenant_id: str = Depends(get_current_tenant),
     deeplake_service: DeepLakeService = Depends(get_deeplake_service),
     auth_info: dict = Depends(authorize_operation("read_vectors"))
-) -> IndexStats:
+) -> Optional[Dict[str, Any]]:
     """Get index statistics for a dataset."""
     try:
-        # Get dataset
-        dataset_response = await deeplake_service.get_dataset(dataset_id, tenant_id)
+        # Get index info using the new service method
+        index_info = await deeplake_service.get_index_info(dataset_id, tenant_id)
         
-        # Load the actual dataset
-        dataset_key = deeplake_service._get_dataset_key(dataset_id, tenant_id)
-        dataset = deeplake_service.datasets.get(dataset_key)
+        if not index_info:
+            return {
+                "index_type": "none",
+                "total_vectors": 0,
+                "index_size_bytes": 0,
+                "build_time_seconds": 0,
+                "parameters": {},
+                "is_trained": False,
+                "last_updated": None
+            }
         
-        if not dataset:
-            raise HTTPException(status_code=404, detail="Dataset not loaded")
-        
-        # Get index stats
-        stats = await deeplake_service.index_service.get_index_stats(dataset)
-        
-        return stats
+        return index_info
         
     except DatasetNotFoundException:
         raise HTTPException(status_code=404, detail=f"Dataset {dataset_id} not found")

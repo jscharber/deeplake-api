@@ -37,7 +37,7 @@ class DatasetCreate(BaseModel):
     @field_validator('metric_type')
     @classmethod
     def validate_metric_type(cls, v: str) -> str:
-        allowed_metrics = ['cosine', 'euclidean', 'manhattan', 'dot_product']
+        allowed_metrics = ['cosine', 'euclidean', 'manhattan', 'dot_product', 'hamming']
         if v not in allowed_metrics:
             raise ValueError(f"metric_type must be one of {allowed_metrics}")
         return v
