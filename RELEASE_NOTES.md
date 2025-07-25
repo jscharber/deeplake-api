@@ -205,9 +205,9 @@ This release represents a significant milestone in building a production-ready v
 ## 📞 Support
 
 For questions, issues, or feedback:
-- GitHub Issues: [github.com/your-org/deeplake-api/issues](https://github.com/your-org/deeplake-api/issues)
-- Documentation: [docs.yourcompany.com](https://docs.yourcompany.com)
-- Email: [support@yourcompany.com](mailto:support@yourcompany.com)
+- GitHub Issues: [github.com/Tributary-ai-services/deeplake-api/issues](https://github.com/Tributary-ai-services/deeplake-api/issues)
+- Documentation: [github.com/orgs/Tributary-ai-services/discussions](https://github.com/orgs/Tributary-ai-services/discussions)
+- Email: [tas-deeplake@scharber.com](mailto:tas-deeplake@scharber.com)
 
 ---
 

@@ -26,7 +26,7 @@ All API errors return a consistent JSON structure:
     "timestamp": "2024-01-01T12:00:00Z"
   },
   "request_id": "req-123-456-789",
-  "support_url": "https://docs.example.com/errors/DATASET_NOT_FOUND"
+  "support_url": "https://github.com/Tributary-ai-services/deeplake-api/wiki/errors/DATASET_NOT_FOUND"
 }
 ```
 
@@ -576,10 +576,10 @@ Common error metrics to monitor:
 ### Support Information
 
 - **Error Documentation**: Each error code links to detailed documentation
-- **Support Portal**: [support.example.com](https://support.example.com)
+- **Support Portal**: [github.com/Tributary-ai-services/deeplake-api/issues](https://github.com/Tributary-ai-services/deeplake-api/issues)
 - **GitHub Issues**: [github.com/your-org/deeplake-api/issues](https://github.com/your-org/deeplake-api/issues)
-- **Community Forum**: [community.example.com](https://community.example.com)
-- **Emergency Support**: [emergency@example.com](mailto:emergency@example.com)
+- **Community Forum**: [github.com/orgs/Tributary-ai-services/discussions](https://github.com/orgs/Tributary-ai-services/discussions)
+- **Emergency Support**: [tas-deeplake@scharber.com](mailto:tas-deeplake@scharber.com)
 
 ## 🔗 Related Documentation
 

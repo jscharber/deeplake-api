@@ -1014,7 +1014,7 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/your-org/deeplake-api
+    repoURL: https://github.com/Tributary-ai-services/deeplake-api
     targetRevision: HEAD
     path: k8s/production
   destination:

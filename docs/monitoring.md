@@ -734,8 +734,8 @@ groups:
         annotations:
           summary: "High error rate detected"
           description: "Error rate is {{ $value | humanizePercentage }} for instance {{ $labels.instance }}"
-          dashboard: "https://grafana.example.com/d/deeplake-api"
-          runbook: "https://docs.example.com/runbooks/high-error-rate"
+          dashboard: "https://grafana.scharber.com/d/deeplake-api"
+          runbook: "https://github.com/Tributary-ai-services/deeplake-api/wiki/runbooks/high-error-rate"
       
       # High Response Time
       - alert: HighResponseTime

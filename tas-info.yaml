@@ -1,0 +1,44 @@
+contacts:
+  # Organization Information
+  organization:
+    company_name: "Tributary AI Services"
+    company_domain: "scharber.com"
+    github_org_name: "Tributary-ai-services"
+
+  # Repository URLs
+  repository:
+    deeplake_api_email: tas-deeplake@scharber.com
+    deeplake_github_discussions: https://github.com/orgs/Tributary-ai-services/discussions
+    deeplake_github_repository: https://github.com/Tributary-ai-services/deeplake-api
+    deeplake_github_issues: https://github.com/Tributary-ai-services/deeplake-api/issues
+    deeplake_support_email: tas-deeplake@scharber.com
+
+  # Operations Emails
+  operations:
+    production_email: tas-deeplake@scharber.com
+    oncall_email: tas-deeplake@scharber.com
+    alerts_email: tas-deeplake@scharber.com
+    escalation_email: tas-deeplake@scharber.com
+    monitoring_email: tas-deeplake@scharber.com
+    observability_email: tas-deeplake@scharber.com
+    devops_email: tas-deeplake@scharber.com
+    team_email: tas-deeplake@scharber.com
+
+  # Security & Emergency
+  security:
+    security_email: tas-deeplake@scharber.com
+    emergency_email: tas-deeplake@scharber.com
+
+  # Support & Sales
+  support:
+    support_email: tas-deeplake@scharber.com
+    tech_support_email: tas-deeplake@scharber.com
+    sales_email: tas-deeplake@scharber.com
+
+  # Leadership & Architecture
+  leadership:
+    sre_lead_email: tas-deeplake@scharber.com
+    dba_email: tas-deeplake@scharber.com
+    cto_email: tas-deeplake@scharber.com
+    vp_eng_email: tas-deeplake@scharber.com
+    architecture_email: tas-deeplake@scharber.com

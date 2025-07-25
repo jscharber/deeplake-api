@@ -370,7 +370,7 @@ asyncio.run(test_integration())
 ### Where can I get help?
 
 - **Documentation**: [docs.yourcompany.com](https://docs.yourcompany.com)
-- **GitHub Issues**: [github.com/your-org/deeplake-api/issues](https://github.com/your-org/deeplake-api/issues)
+- **GitHub Issues**: [github.com/Tributary-ai-services/deeplake-api/issues](https://github.com/Tributary-ai-services/deeplake-api/issues)
 - **Community Forum**: [community.yourcompany.com](https://community.yourcompany.com)
 - **Email Support**: [support@yourcompany.com](mailto:support@yourcompany.com)
 
@@ -511,7 +511,7 @@ When contacting support:
 If you can't find the answer here:
 1. Check the [troubleshooting guide](./troubleshooting.md)
 2. Search our [community forum](https://community.yourcompany.com)
-3. Browse [GitHub issues](https://github.com/your-org/deeplake-api/issues)
+3. Browse [GitHub issues](https://github.com/Tributary-ai-services/deeplake-api/issues)
 4. Contact [support](mailto:support@yourcompany.com)
 
 We're here to help! 🚀

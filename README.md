@@ -31,8 +31,8 @@ A production-ready, universal vector database service built with Deep Lake, prov
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/your-org/deeplake-vector-service.git
-   cd deeplake-vector-service
+   git clone https://github.com/Tributary-ai-services/deeplake-api.git
+   cd deeplake-api
    ```
 
 2. **Start all services (including monitoring)**
@@ -495,7 +495,7 @@ pagerduty_configs:
 **Email**:
 ```yaml
 email_configs:
-- to: 'oncall@yourcompany.com'
+- to: 'tas-deeplake@scharber.com'
   subject: 'DeepLake API Alert'
   body: 'Alert details...'
 ```
@@ -647,8 +647,8 @@ curl -X POST "http://localhost:8000/api/v1/datasets/my-dataset/search/hybrid" \
 
 ```bash
 # Clone repository
-git clone https://github.com/your-org/deeplake-vector-service.git
-cd deeplake-vector-service
+git clone https://github.com/Tributary-ai-services/deeplake-api.git
+cd deeplake-api
 
 # Create virtual environment
 python -m venv venv

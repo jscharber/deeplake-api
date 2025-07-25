@@ -256,4 +256,4 @@ For issues, questions, or contributions:
 
 ---
 
-**Full Changelog**: https://github.com/your-org/deeplake-vector-service/commits/v1.0.0
+**Full Changelog**: https://github.com/Tributary-ai-services/deeplake-api/commits/v1.0.0

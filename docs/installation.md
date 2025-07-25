@@ -174,7 +174,7 @@ docker-compose logs -f deeplake-api
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/deeplake-api.git
+git clone https://github.com/Tributary-ai-services/deeplake-api.git
 cd deeplake-api
 ```
 
@@ -219,7 +219,7 @@ Example `.env` file:
 ```bash
 # DeepLake Configuration
 DEEPLAKE_TOKEN=your-token-here
-DEEPLAKE_ORG=your-org-name
+DEEPLAKE_ORG=tributary-ai-services
 
 # Service Configuration
 HOST=0.0.0.0
@@ -638,7 +638,7 @@ ENVIRONMENT=production
 # DeepLake Configuration
 # ===================
 DEEPLAKE_TOKEN=your-token-here
-DEEPLAKE_ORG=your-org-name
+DEEPLAKE_ORG=tributary-ai-services
 DEEPLAKE_DATASET_PREFIX=prod
 
 # ===================
@@ -705,7 +705,7 @@ server:
 
 deeplake:
   token: "your-token-here"
-  org: "your-org-name"
+  org: "tributary-ai-services"
   dataset_prefix: "prod"
 
 redis:
@@ -815,7 +815,7 @@ curl -X POST "http://localhost:8000/api/v1/datasets" \
 3. **DeepLake authentication failed**
    ```bash
    # Verify token
-   python -c "import deeplake; print(deeplake.exists('hub://your-org/test'))"
+   python -c "import deeplake; print(deeplake.exists('hub://tributary-ai-services/test'))"
    ```
 
 4. **Port already in use**
@@ -851,6 +851,6 @@ docker run -d \
 ## 🆘 Support
 
 - **Documentation**: [Full Documentation](./README.md)
-- **Issues**: [GitHub Issues](https://github.com/your-org/deeplake-api/issues)
+- **Issues**: [GitHub Issues](https://github.com/Tributary-ai-services/deeplake-api/issues)
 - **Community**: [Discord](https://discord.gg/your-discord)
 - **Enterprise**: [support@yourcompany.com](mailto:support@yourcompany.com)
