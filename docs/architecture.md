@@ -540,7 +540,7 @@ database:
 
 # config/production.yaml
 database:
-  host: prod-db.example.com
+  host: prod-db.scharber.com
   port: 5432
   ssl: true
 ```

@@ -679,7 +679,7 @@ examples/
 
 ## 🆘 Need Help?
 
-- **Issues**: [GitHub Issues](https://github.com/your-org/deeplake-api/issues)
+- **Issues**: [GitHub Issues](https://github.com/Tributary-ai-services/deeplake-api/issues)
 - **Community**: [Discord](https://discord.gg/your-discord)
 - **Documentation**: [Full Documentation](../README.md)
 - **Support**: [support@yourcompany.com](mailto:support@yourcompany.com)

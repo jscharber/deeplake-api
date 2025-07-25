@@ -436,7 +436,7 @@ curl -X POST ".../vectors/batch" -d '{"vectors": [...], "metadata": [...]}'
 - **Examples**: Check out [more examples](./examples/README.md)
 - **Issues**: Report bugs on [GitHub](https://github.com/your-org/deeplake-api/issues)
 - **Community**: Join our [Discord](https://discord.gg/your-discord)
-- **Support**: Email [support@your-company.com](mailto:support@your-company.com)
+- **Support**: Email [tas-deeplake@scharber.com](mailto:tas-deeplake@scharber.com)
 
 ## 📝 What's Next?
 

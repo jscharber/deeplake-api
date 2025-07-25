@@ -46,11 +46,11 @@ DEEPLAKE_ORG_ID=your-org-id
 # Alerting Configuration
 SLACK_WEBHOOK_URL=https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK
 PAGERDUTY_INTEGRATION_KEY=your-pagerduty-integration-key
-ALERT_EMAIL_TO=oncall@yourcompany.com
-ALERT_EMAIL_FROM=alerts@yourcompany.com
+ALERT_EMAIL_TO=tas-deeplake@scharber.com
+ALERT_EMAIL_FROM=tas-deeplake@scharber.com
 SMTP_HOST=localhost
 SMTP_PORT=587
-SMTP_USER=alerts@yourcompany.com
+SMTP_USER=tas-deeplake@scharber.com
 SMTP_PASSWORD=your-smtp-password
 ```
 
@@ -79,7 +79,7 @@ pagerduty_configs:
 #### Email Configuration
 ```yaml
 email_configs:
-- to: 'oncall@yourcompany.com'
+- to: 'tas-deeplake@scharber.com'
   subject: 'DeepLake API Critical Alert'
   body: |
     Alert Details:

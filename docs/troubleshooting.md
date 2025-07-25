@@ -148,7 +148,7 @@ redis-cli flushall
 import deeplake
 
 try:
-    ds = deeplake.empty("hub://your-org/test-dataset")
+    ds = deeplake.empty("hub://tributary-ai-services/test-dataset")
     print("Token valid")
 except Exception as e:
     print(f"Token invalid: {e}")
@@ -164,7 +164,7 @@ python -c "
 import deeplake
 print('DeepLake version:', deeplake.__version__)
 try:
-    deeplake.exists('hub://your-org/test')
+    deeplake.exists('hub://tributary-ai-services/test')
     print('Connection successful')
 except Exception as e:
     print('Connection failed:', e)
@@ -710,7 +710,7 @@ if __name__ == "__main__":
 1. **Documentation**: [docs.yourcompany.com](https://docs.yourcompany.com)
 2. **FAQ**: [faq.yourcompany.com](https://faq.yourcompany.com)
 3. **Community Forum**: [community.yourcompany.com](https://community.yourcompany.com)
-4. **GitHub Issues**: [github.com/your-org/deeplake-api/issues](https://github.com/your-org/deeplake-api/issues)
+4. **GitHub Issues**: [github.com/Tributary-ai-services/deeplake-api/issues](https://github.com/Tributary-ai-services/deeplake-api/issues)
 
 ### Support Channels
 

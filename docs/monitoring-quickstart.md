@@ -210,7 +210,7 @@ rate(http_requests_total[1m])
 ```bash
 # Download the comprehensive dashboard
 curl -o deeplake-dashboard.json \
-  https://raw.githubusercontent.com/your-org/deeplake-api/main/monitoring/dashboards/overview.json
+  https://raw.githubusercontent.com/Tributary-ai-services/deeplake-api/main/monitoring/dashboards/overview.json
 ```
 
 ### 2. Import to Grafana

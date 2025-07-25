@@ -230,4 +230,4 @@ This project is licensed under the MIT License - see the [LICENSE](../LICENSE) f
 
 ---
 
-For more information, visit our [GitHub repository](https://github.com/your-org/deeplake-api) or contact us at [support@your-company.com](mailto:support@your-company.com).
+For more information, visit our [GitHub repository](https://github.com/Tributary-ai-services/deeplake-api) or contact us at [tas-deeplake@scharber.com](mailto:tas-deeplake@scharber.com).

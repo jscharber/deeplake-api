@@ -573,13 +573,13 @@ tail -f /var/log/deeplake/backup.log
 ## Emergency Contacts
 
 ### Primary Team
-- **SRE Lead**: sre-lead@company.com
-- **DevOps Engineer**: devops@company.com
-- **Database Administrator**: dba@company.com
+- **SRE Lead**: tas-deeplake@scharber.com
+- **DevOps Engineer**: tas-deeplake@scharber.com
+- **Database Administrator**: tas-deeplake@scharber.com
 
 ### Escalation
-- **CTO**: cto@company.com
-- **VP Engineering**: vp-eng@company.com
+- **CTO**: tas-deeplake@scharber.com
+- **VP Engineering**: tas-deeplake@scharber.com
 
 ### Vendors
 - **AWS Support**: Premium Support Plan

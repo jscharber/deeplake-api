@@ -205,13 +205,13 @@ Content-Type: application/json
       "id": "doc1",
       "title": "Document 1",
       "category": "tech",
-      "url": "https://example.com/doc1"
+      "url": "https://scharber.com/doc1"
     },
     {
       "id": "doc2",
       "title": "Document 2",
       "category": "science",
-      "url": "https://example.com/doc2"
+      "url": "https://scharber.com/doc2"
     }
   ]
 }
@@ -347,7 +347,7 @@ Content-Type: application/json
         "id": "doc1",
         "title": "Document 1",
         "category": "tech",
-        "url": "https://example.com/doc1"
+        "url": "https://scharber.com/doc1"
       }
     }
   ],
